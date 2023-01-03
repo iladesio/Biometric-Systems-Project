@@ -10,6 +10,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn import svm
 from sklearn import metrics
 from tqdm import tqdm
 from joblib import dump, load
@@ -130,6 +131,14 @@ plt.ylabel('Testing Accuracy')
 #print("Model accuracy Naive Bayes: ", nvModel.score(X_test, y_test))
 
 
+svmModel = svm.SVC()
+svmModel.fit(X_train, y_train)
+
+dump(lrModel, 'svmModel.joblib')
+
+print("Model accuracy for SVM: ", svmModel.score(X_test, y_test)) 
+
+
 #-----------------------------------------------
 
 
@@ -157,6 +166,7 @@ scaler = load("StandardScaler.joblib")
 clf = load("clf.joblib")
 lrModel = load("lrModel.joblib")
 neigh = load("KNN.joblib")
+svmModel = load("svmModel.joblib")
 
 templates_clf = scaler.transform(templates)  
 
@@ -164,3 +174,4 @@ print()
 print("clf: ", clf.predict(templates_clf))
 print("lrModel: ", lrModel.predict(templates_clf))
 print("neigh: ", neigh.predict(templates))
+print("svmModel: ", svmModel.predict(templates_clf))
