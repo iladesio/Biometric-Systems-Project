@@ -144,7 +144,7 @@ print("Model accuracy for SVM: ", svmModel.score(X_test, y_test))
 
 
 ts = {'id':[],'time':[], 'm_x':[], 'm_y':[]}
-file_path = "Test/Walk_Ex_mavi_1"
+file_path = "Test/Walk_Ex_maestro_1mesedopo"
 sample = np.array(np.loadtxt(file_path, dtype=float))
 for temp in sample:
   ts["m_x"].append(temp[5])
