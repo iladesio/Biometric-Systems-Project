@@ -71,7 +71,6 @@ with open('Templates/templates', 'w') as convert_file:
 #---------------------------------------------
 
 
-
 data = {}
 with open('Templates/templates') as json_file:
     data = json.load(json_file)
@@ -101,6 +100,7 @@ print("Model accuracy for CLF: ", clf.score(X_test, y_test))
 
 
 lrModel = LogisticRegression(max_iter = 10000)
+#lrModel = LogisticRegression(multi_class = 'multinomial', solver = 'lbfgs', max_iter = 10000)
 lrModel.fit(X_train, y_train)
 
 dump(lrModel, 'lrModel.joblib')
@@ -175,3 +175,4 @@ print("clf: ", clf.predict(templates_clf))
 print("lrModel: ", lrModel.predict(templates_clf))
 print("neigh: ", neigh.predict(templates))
 print("svmModel: ", svmModel.predict(templates_clf))
+
