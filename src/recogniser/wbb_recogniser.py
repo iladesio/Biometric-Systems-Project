@@ -4,10 +4,10 @@ import os
 import numpy as np
 import pandas as pd
 from joblib import dump, load
+from sklearn import svm
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from tsfresh import extract_features
@@ -32,9 +32,9 @@ class WBBRecogniser:
 
         # models
         self.standard_scaler = None
-        self.mlp_classifier = None
         self.lr_model = None
         self.kneighbors_classifier = None
+        self.svm_model = None
 
         """ init """
         if config.EXTRACT_FEATURE_FROM_SAMPLES:
@@ -65,15 +65,14 @@ class WBBRecogniser:
 
         if self.load_model_from_file:
             self.standard_scaler = load(config.STANDARD_SCALER_DUMP_PATH)
-            self.mlp_classifier = load(config.MLP_CLASSIFIER_DUMP_PATH)
             self.lr_model = load(config.LR_MODEL_DUMP_PATH)
             self.kneighbors_classifier = load(config.KNEIGHBORS_CLASSIFIER_DUMP_PATH)
+            self.svm_model = load(config.SVM_MODEL_DUMP_PATH)
 
         else:
             self.standard_scaler = StandardScaler()
-            self.mlp_classifier = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1,
-                                                max_iter=10000)
             self.lr_model = LogisticRegression(max_iter=10000)
+            self.svm_model = svm.SVC()
 
         # Don't cheat - fit only on training data
         self.standard_scaler.fit(self.x_train)
@@ -82,21 +81,23 @@ class WBBRecogniser:
         self.x_train = self.standard_scaler.transform(self.x_train)
         self.x_test = self.standard_scaler.transform(self.x_test)
 
-        self.mlp_classifier.fit(self.x_train, self.y_train)
-
         self.lr_model.fit(self.x_train, self.y_train)
+        self.svm_model.fit(self.x_train, self.y_train)
 
         k_range = range(1, 8)
 
         for k in tqdm(k_range):
-            self.kneighbors_classifier = KNeighborsClassifier(n_neighbors=k)
+            self.kneighbors_classifier = KNeighborsClassifier(n_neighbors=k)  # todo capire perché
             self.kneighbors_classifier.fit(self.x_train, self.y_train)
+
+        print("Model accuracy for Logistic Regression: ", self.lr_model.score(self.x_test, self.y_test))
+        print("Model accuracy for SVM: ", self.svm_model.score(self.x_test, self.y_test))
 
         if config.SAVE_DUMPS:
             dump(self.standard_scaler, config.STANDARD_SCALER_DUMP_PATH)
-            dump(self.mlp_classifier, config.MLP_CLASSIFIER_DUMP_PATH)
             dump(self.lr_model, config.LR_MODEL_DUMP_PATH)
             dump(self.kneighbors_classifier, config.KNEIGHBORS_CLASSIFIER_DUMP_PATH)
+            dump(self.svm_model, config.SVM_MODEL_DUMP_PATH)
 
     @staticmethod
     def __extract_feature_from_samples():
@@ -126,7 +127,8 @@ class WBBRecogniser:
 
         data = {"label": [], "template": []}
 
-        for elem in templates:
+        for id, elem in enumerate(templates):
+            print("fe cycle id: " + str(id))
             extracted_features = impute(
                 extract_features(
                     elem,
@@ -135,7 +137,7 @@ class WBBRecogniser:
                     n_jobs=1,
                     show_warnings=False,
                     disable_progressbar=False,
-                    profile=False,
+                    profile=False
                 )
             )
 
@@ -168,7 +170,8 @@ class WBBRecogniser:
             extract_features(ts,
                              column_id="id",
                              column_sort="time",
-                             n_jobs=1,
+                             n_jobs=5,
+                             chunksize=5,
                              show_warnings=False,
                              disable_progressbar=True,
                              profile=False))
@@ -179,12 +182,12 @@ class WBBRecogniser:
 
         templates.append(list)
 
-        templates_clf = self.standard_scaler.transform(templates)
+        scaled_templates = self.standard_scaler.transform(templates)
 
         print()
-        print("clf: ", self.mlp_classifier.predict(templates_clf))
-        print("lrModel: ", self.lr_model.predict(templates_clf))
-        print("neigh: ", self.kneighbors_classifier.predict(templates))
+        print("lrModel: ", self.lr_model.predict(scaled_templates))
+        print("neigh: ", self.kneighbors_classifier.predict(scaled_templates))
+        print("svm: ", self.svm_model.predict(scaled_templates))
 
     def run_test(self, pathname):
         self.test_sample(pathname)

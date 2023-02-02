@@ -9,6 +9,6 @@ SAVE_DUMPS = True
 LOAD_DUMPS = True
 
 STANDARD_SCALER_DUMP_PATH = "models/StandardScaler.joblib"
-MLP_CLASSIFIER_DUMP_PATH = "models/clf.joblib"
 LR_MODEL_DUMP_PATH = "models/lrModel.joblib"
 KNEIGHBORS_CLASSIFIER_DUMP_PATH = "models/KNN.joblib"
+SVM_MODEL_DUMP_PATH = "models/svmModel.joblib"
