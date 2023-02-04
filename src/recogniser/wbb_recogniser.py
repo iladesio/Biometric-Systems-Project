@@ -173,8 +173,7 @@ class WBBRecogniser:
                     ts["m_y"].append(temp[6])
                     ts["time"].append(temp[0])
                     ts["id"].append(directory + "_" + str(ctr))
-
-                ctr+=1
+                    
 
         data = {"label": [], "template": [], "features_name": []}
 
