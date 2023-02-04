@@ -59,8 +59,8 @@ class WBBRecogniser:
         # selected_feature evaluates the importance of the different extracted features
         selected_feature = select_features(df, pd.Series(data=y_label, index=y_label))
 
-        x_train, x_test, y_train, y_test = train_test_split(selected_feature.to_numpy(), y_label, test_size=0.1,
-                                                            random_state=42)
+        #x_train, x_test, y_train, y_test = train_test_split(x_feature, y_label, test_size=0.1, random_state=42)
+        x_train, x_test, y_train, y_test = train_test_split(selected_feature.to_numpy(), y_label, test_size=0.1, random_state=42)
 
         self.x_train = x_train
         self.x_test = x_test
@@ -114,14 +114,57 @@ class WBBRecogniser:
         list_dir = os.listdir(config.SAMPLES_DIR_PATH)
         print(list_dir)
 
-        templates = []
+        #templates = []
 
+        #for directory in list_dir:
+        #    # get samples file list name
+        #    file_list = os.listdir(config.SAMPLES_DIR_PATH + "/" + directory + "")
+
+        #    for filename in file_list:
+        #        ts = {"id": [], "time": [], "m_x": [], "m_y": []}
+        #        sample = np.array(
+        #            np.loadtxt(config.SAMPLES_DIR_PATH + "/" + directory + "/" + filename + "", dtype=float))
+
+        #        for temp in sample:
+        #            ts["m_x"].append(temp[5])
+        #            ts["m_y"].append(temp[6])
+        #            ts["time"].append(temp[0])
+        #            ts["id"].append(directory)
+
+        #        if len(sample) > 0:
+        #            templates.append(pd.DataFrame(ts))
+
+        #for id, elem in enumerate(templates):
+        #    print("fe cycle id: " + str(id))
+        #    extracted_features = extract_features(
+        #        elem,
+        #        column_id="id",
+        #        column_sort="time",
+        #        n_jobs=1,
+        #        show_warnings=False,
+        #        disable_progressbar=False,
+        #        profile=False,
+        #        impute_function=impute
+        #    )
+
+        #    data["label"].append(elem["id"][0])
+
+        #    ext_feat_list = []
+        #    features_name = extracted_features.columns.tolist()
+
+        #    for e in extracted_features.to_numpy()[0]:
+        #        ext_feat_list.append(e)
+
+        #    data["template"].append(ext_feat_list)
+        #    # save just one feature name list
+        #    data["features_name"] = features_name
+
+        ts = {"id": [], "time": [], "m_x": [], "m_y": []}
+        
         for directory in list_dir:
             # get samples file list name
             file_list = os.listdir(config.SAMPLES_DIR_PATH + "/" + directory + "")
-
-            for filename in file_list:
-                ts = {"id": [], "time": [], "m_x": [], "m_y": []}
+            for filename in file_list:                
                 sample = np.array(
                     np.loadtxt(config.SAMPLES_DIR_PATH + "/" + directory + "/" + filename + "", dtype=float))
 
@@ -129,37 +172,41 @@ class WBBRecogniser:
                     ts["m_x"].append(temp[5])
                     ts["m_y"].append(temp[6])
                     ts["time"].append(temp[0])
-                    ts["id"].append(directory)
+                    ts["id"].append(directory + "_" + str(ctr))
 
-                if len(sample) > 0:
-                    templates.append(pd.DataFrame(ts))
+                ctr+=1
 
         data = {"label": [], "template": [], "features_name": []}
 
-        for id, elem in enumerate(templates):
-            print("fe cycle id: " + str(id))
-            extracted_features = extract_features(
-                elem,
+        extracted_features = extract_features(
+                pd.DataFrame(ts),
                 column_id="id",
                 column_sort="time",
-                n_jobs=1,
+                n_jobs=8,
                 show_warnings=False,
                 disable_progressbar=False,
                 profile=False,
                 impute_function=impute
-            )
+            )         
 
-            data["label"].append(elem["id"][0])
+        
+        features_name = extracted_features.columns.tolist()
 
+        for e in extracted_features.iterrows():
+            label = "_".join(e[0].split("_")[:-1])
+            data["label"].append(label)
+
+       
+        for features_list in extracted_features.to_numpy():
             ext_feat_list = []
-            features_name = extracted_features.columns.tolist()
-
-            for e in extracted_features.to_numpy()[0]:
-                ext_feat_list.append(e)
+            for feature in features_list:
+                ext_feat_list.append(feature)
 
             data["template"].append(ext_feat_list)
-            # save just one feature name list
-            data["features_name"] = features_name
+       
+        # save just one feature name list
+        data["features_name"] = features_name       
+        
 
         with open(config.TEMPLATES_PATH, "w") as convert_file:
             convert_file.write(json.dumps(data))
@@ -179,15 +226,16 @@ class WBBRecogniser:
 
         templates = []
 
-        extracted_features = impute(
-            extract_features(ts,
-                             column_id="id",
-                             column_sort="time",
-                             n_jobs=5,
-                             chunksize=5,
-                             show_warnings=False,
-                             disable_progressbar=True,
-                             profile=False))
+        extracted_features = extract_features(
+                ts,
+                column_id="id",
+                column_sort="time",
+                n_jobs=1,
+                show_warnings=False,
+                disable_progressbar=False,
+                profile=False,
+                impute_function=impute
+            )
 
         list = []
         for e in extracted_features.to_numpy()[0]:
