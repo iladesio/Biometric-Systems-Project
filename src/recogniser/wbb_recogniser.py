@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
-from tsfresh import extract_features
+from tsfresh import extract_features, select_features
 from tsfresh.utilities.dataframe_functions import impute
 
 from src.utilities import config
@@ -48,10 +48,19 @@ class WBBRecogniser:
     # Split dataset in train and test set
     def __split_train_test(self):
         self.__read_datas()
-        x_feature = self.data['template']
-        y_label = self.data['label']
 
-        x_train, x_test, y_train, y_test = train_test_split(x_feature, y_label, test_size=0.1, random_state=42)
+        x_feature = self.data["template"]
+        y_label = self.data["label"]
+        features_name = self.data["features_name"]
+
+        df = pd.DataFrame(index=y_label, data=x_feature)
+        df.columns = features_name
+
+        # selected_feature evaluates the importance of the different extracted features
+        selected_feature = select_features(df, pd.Series(data=y_label, index=y_label))
+
+        x_train, x_test, y_train, y_test = train_test_split(selected_feature.to_numpy(), y_label, test_size=0.1,
+                                                            random_state=42)
 
         self.x_train = x_train
         self.x_test = x_test
@@ -78,8 +87,8 @@ class WBBRecogniser:
         self.standard_scaler.fit(self.x_train)
 
         # apply same transformation
-        self.x_train = self.standard_scaler.transform(self.x_train)
-        self.x_test = self.standard_scaler.transform(self.x_test)
+        transformed_x_train = self.standard_scaler.transform(self.x_train)
+        transformed_x_test = self.standard_scaler.transform(self.x_test)
 
         self.lr_model.fit(self.x_train, self.y_train)
         self.svm_model.fit(self.x_train, self.y_train)
@@ -88,10 +97,10 @@ class WBBRecogniser:
 
         for k in tqdm(k_range):
             self.kneighbors_classifier = KNeighborsClassifier(n_neighbors=k)  # todo capire perché
-            self.kneighbors_classifier.fit(self.x_train, self.y_train)
+            self.kneighbors_classifier.fit(transformed_x_train, self.y_train)
 
         print("Model accuracy for Logistic Regression: ", self.lr_model.score(self.x_test, self.y_test))
-        print("Model accuracy for SVM: ", self.svm_model.score(self.x_test, self.y_test))
+        print("Model accuracy for SVM: ", self.svm_model.score(transformed_x_test, self.y_test))
 
         if config.SAVE_DUMPS:
             dump(self.standard_scaler, config.STANDARD_SCALER_DUMP_PATH)
@@ -125,35 +134,39 @@ class WBBRecogniser:
                 if len(sample) > 0:
                     templates.append(pd.DataFrame(ts))
 
-        data = {"label": [], "template": []}
+        data = {"label": [], "template": [], "features_name": []}
 
         for id, elem in enumerate(templates):
             print("fe cycle id: " + str(id))
-            extracted_features = impute(
-                extract_features(
-                    elem,
-                    column_id="id",
-                    column_sort="time",
-                    n_jobs=1,
-                    show_warnings=False,
-                    disable_progressbar=False,
-                    profile=False
-                )
+            extracted_features = extract_features(
+                elem,
+                column_id="id",
+                column_sort="time",
+                n_jobs=1,
+                show_warnings=False,
+                disable_progressbar=False,
+                profile=False,
+                impute_function=impute
             )
 
             data["label"].append(elem["id"][0])
+
             ext_feat_list = []
+            features_name = extracted_features.columns.tolist()
 
             for e in extracted_features.to_numpy()[0]:
                 ext_feat_list.append(e)
-            data["template"].append(ext_feat_list)
 
-        with open(config.TEMPLATES_PATH, 'w') as convert_file:
+            data["template"].append(ext_feat_list)
+            # save just one feature name list
+            data["features_name"] = features_name
+
+        with open(config.TEMPLATES_PATH, "w") as convert_file:
             convert_file.write(json.dumps(data))
 
     def test_sample(self, pathname):
 
-        ts = {'id': [], 'time': [], 'm_x': [], 'm_y': []}
+        ts = {"id": [], "time": [], "m_x": [], "m_y": []}
         sample = np.array(np.loadtxt(pathname, dtype=float))
 
         for temp in sample:
