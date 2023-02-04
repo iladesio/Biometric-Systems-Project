@@ -9,6 +9,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
+from tsfresh.feature_selection.relevance import calculate_relevance_table
 from tqdm import tqdm
 from tsfresh import extract_features, select_features
 from tsfresh.utilities.dataframe_functions import impute
@@ -60,12 +61,31 @@ class WBBRecogniser:
         print("Feature selection in progress...")
         # selected_feature evaluates the importance of the different extracted features
         selected_feature = select_features(df, pd.Series(data=y_label, index=y_label))
+        
+        relevance_table = calculate_relevance_table(selected_feature, pd.Series(data=y_label, index=y_label))
+        relevance_table = relevance_table[relevance_table.relevant]
+        relevance_table.sort_values("p_value", inplace=True)
+
+        #filtering on selected features
+        indices = []
+        for e in relevance_table["feature"]: #riducibile ex ->  for e in relevance_table["feature"][:500]:
+            indices.append(selected_feature.columns.get_loc(e))
+
+        rel_features = []
+        for f in selected_feature.to_numpy():
+            temp = []
+            for idx in indices:
+                temp.append(f[idx])
+            rel_features.append(temp)
+
+
         print("Feature selection completed!")
 
         print("Splitting Dataset")
 
         #x_train, x_test, y_train, y_test = train_test_split(x_feature, y_label, test_size=0.1, random_state=42)
-        x_train, x_test, y_train, y_test = train_test_split(selected_feature.to_numpy(), y_label, test_size=0.1, random_state=42)
+        #x_train, x_test, y_train, y_test = train_test_split(selected_feature.to_numpy(), y_label, test_size=0.1, random_state=42)
+        x_train, x_test, y_train, y_test = train_test_split(rel_features, y_label, test_size=0.1, random_state=42)
 
         self.x_train = x_train
         self.x_test = x_test
