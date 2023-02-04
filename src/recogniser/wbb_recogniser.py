@@ -47,6 +47,7 @@ class WBBRecogniser:
 
     # Split dataset in train and test set
     def __split_train_test(self):
+        print("Loading templates data")
         self.__read_datas()
 
         x_feature = self.data["template"]
@@ -55,9 +56,13 @@ class WBBRecogniser:
 
         df = pd.DataFrame(index=y_label, data=x_feature)
         df.columns = features_name
-
+        
+        print("Feature selection in progress...")
         # selected_feature evaluates the importance of the different extracted features
         selected_feature = select_features(df, pd.Series(data=y_label, index=y_label))
+        print("Feature selection completed!")
+
+        print("Splitting Dataset")
 
         #x_train, x_test, y_train, y_test = train_test_split(x_feature, y_label, test_size=0.1, random_state=42)
         x_train, x_test, y_train, y_test = train_test_split(selected_feature.to_numpy(), y_label, test_size=0.1, random_state=42)
@@ -73,15 +78,19 @@ class WBBRecogniser:
         self.__split_train_test()
 
         if self.load_model_from_file:
+            print("Loading models data")
             self.standard_scaler = load(config.STANDARD_SCALER_DUMP_PATH)
             self.lr_model = load(config.LR_MODEL_DUMP_PATH)
             self.kneighbors_classifier = load(config.KNEIGHBORS_CLASSIFIER_DUMP_PATH)
             self.svm_model = load(config.SVM_MODEL_DUMP_PATH)
 
         else:
+            print("Initializing models")
             self.standard_scaler = StandardScaler()
             self.lr_model = LogisticRegression(max_iter=10000)
             self.svm_model = svm.SVC()
+
+        print("Models training in progress...")
 
         # Don't cheat - fit only on training data
         self.standard_scaler.fit(self.x_train)
@@ -103,6 +112,7 @@ class WBBRecogniser:
         print("Model accuracy for SVM: ", self.svm_model.score(transformed_x_test, self.y_test))
 
         if config.SAVE_DUMPS:
+            print("Dumping models data")
             dump(self.standard_scaler, config.STANDARD_SCALER_DUMP_PATH)
             dump(self.lr_model, config.LR_MODEL_DUMP_PATH)
             dump(self.kneighbors_classifier, config.KNEIGHBORS_CLASSIFIER_DUMP_PATH)
@@ -110,9 +120,11 @@ class WBBRecogniser:
 
     @staticmethod
     def __extract_feature_from_samples():
+
+        print("Samples processing in progress...")
+
         # get samples directory list name
         list_dir = os.listdir(config.SAMPLES_DIR_PATH)
-        print(list_dir)
 
         #templates = []
 
@@ -164,6 +176,7 @@ class WBBRecogniser:
         for directory in list_dir:
             # get samples file list name
             file_list = os.listdir(config.SAMPLES_DIR_PATH + "/" + directory + "")
+            ctr = 1
             for filename in file_list:                
                 sample = np.array(
                     np.loadtxt(config.SAMPLES_DIR_PATH + "/" + directory + "/" + filename + "", dtype=float))
@@ -173,8 +186,13 @@ class WBBRecogniser:
                     ts["m_y"].append(temp[6])
                     ts["time"].append(temp[0])
                     ts["id"].append(directory + "_" + str(ctr))
-                    
 
+                ctr+=1
+                 
+      
+        print("Samples processing completed!")
+        print("Feature extraction in progress...")
+        
         data = {"label": [], "template": [], "features_name": []}
 
         extracted_features = extract_features(
@@ -204,9 +222,12 @@ class WBBRecogniser:
             data["template"].append(ext_feat_list)
        
         # save just one feature name list
-        data["features_name"] = features_name       
+        data["features_name"] = features_name   
+        
+        print("Feature extraction completed!")
         
 
+        print("Dumping templates data")
         with open(config.TEMPLATES_PATH, "w") as convert_file:
             convert_file.write(json.dumps(data))
 
