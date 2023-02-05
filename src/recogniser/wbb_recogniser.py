@@ -9,9 +9,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
-from tsfresh.feature_selection.relevance import calculate_relevance_table
 from tqdm import tqdm
 from tsfresh import extract_features, select_features
+from tsfresh.feature_selection.relevance import calculate_relevance_table
 from tsfresh.utilities.dataframe_functions import impute
 
 from src.utilities import config
@@ -57,18 +57,18 @@ class WBBRecogniser:
 
         df = pd.DataFrame(index=y_label, data=x_feature)
         df.columns = features_name
-        
+
         print("Feature selection in progress...")
         # selected_feature evaluates the importance of the different extracted features
         selected_feature = select_features(df, pd.Series(data=y_label, index=y_label))
-        
+
         relevance_table = calculate_relevance_table(selected_feature, pd.Series(data=y_label, index=y_label))
         relevance_table = relevance_table[relevance_table.relevant]
         relevance_table.sort_values("p_value", inplace=True)
 
-        #filtering on selected features
+        # filtering on selected features
         indices = []
-        for e in relevance_table["feature"]: #riducibile ex ->  for e in relevance_table["feature"][:500]:
+        for e in relevance_table["feature"]:  # riducibile ex ->  for e in relevance_table["feature"][:500]:
             indices.append(selected_feature.columns.get_loc(e))
 
         rel_features = []
@@ -78,13 +78,12 @@ class WBBRecogniser:
                 temp.append(f[idx])
             rel_features.append(temp)
 
-
         print("Feature selection completed!")
 
         print("Splitting Dataset")
 
-        #x_train, x_test, y_train, y_test = train_test_split(x_feature, y_label, test_size=0.1, random_state=42)
-        #x_train, x_test, y_train, y_test = train_test_split(selected_feature.to_numpy(), y_label, test_size=0.1, random_state=42)
+        # x_train, x_test, y_train, y_test = train_test_split(x_feature, y_label, test_size=0.1, random_state=42)
+        # x_train, x_test, y_train, y_test = train_test_split(selected_feature.to_numpy(), y_label, test_size=0.1, random_state=42)
         x_train, x_test, y_train, y_test = train_test_split(rel_features, y_label, test_size=0.1, random_state=42)
 
         self.x_train = x_train
@@ -119,8 +118,8 @@ class WBBRecogniser:
         transformed_x_train = self.standard_scaler.transform(self.x_train)
         transformed_x_test = self.standard_scaler.transform(self.x_test)
 
-        self.lr_model.fit(self.x_train, self.y_train)
-        self.svm_model.fit(self.x_train, self.y_train)
+        self.lr_model.fit(transformed_x_train, self.y_train)
+        self.svm_model.fit(transformed_x_train, self.y_train)
 
         k_range = range(1, 8)
 
@@ -128,7 +127,7 @@ class WBBRecogniser:
             self.kneighbors_classifier = KNeighborsClassifier(n_neighbors=k)  # todo capire perché
             self.kneighbors_classifier.fit(transformed_x_train, self.y_train)
 
-        print("Model accuracy for Logistic Regression: ", self.lr_model.score(self.x_test, self.y_test))
+        print("Model accuracy for Logistic Regression: ", self.lr_model.score(transformed_x_test, self.y_test))
         print("Model accuracy for SVM: ", self.svm_model.score(transformed_x_test, self.y_test))
 
         if config.SAVE_DUMPS:
@@ -146,9 +145,9 @@ class WBBRecogniser:
         # get samples directory list name
         list_dir = os.listdir(config.SAMPLES_DIR_PATH)
 
-        #templates = []
+        # templates = []
 
-        #for directory in list_dir:
+        # for directory in list_dir:
         #    # get samples file list name
         #    file_list = os.listdir(config.SAMPLES_DIR_PATH + "/" + directory + "")
 
@@ -166,7 +165,7 @@ class WBBRecogniser:
         #        if len(sample) > 0:
         #            templates.append(pd.DataFrame(ts))
 
-        #for id, elem in enumerate(templates):
+        # for id, elem in enumerate(templates):
         #    print("fe cycle id: " + str(id))
         #    extracted_features = extract_features(
         #        elem,
@@ -192,12 +191,12 @@ class WBBRecogniser:
         #    data["features_name"] = features_name
 
         ts = {"id": [], "time": [], "m_x": [], "m_y": []}
-        
+
         for directory in list_dir:
             # get samples file list name
             file_list = os.listdir(config.SAMPLES_DIR_PATH + "/" + directory + "")
             ctr = 1
-            for filename in file_list:                
+            for filename in file_list:
                 sample = np.array(
                     np.loadtxt(config.SAMPLES_DIR_PATH + "/" + directory + "/" + filename + "", dtype=float))
 
@@ -207,45 +206,41 @@ class WBBRecogniser:
                     ts["time"].append(temp[0])
                     ts["id"].append(directory + "_" + str(ctr))
 
-                ctr+=1
-                 
-      
+                ctr += 1
+
         print("Samples processing completed!")
         print("Feature extraction in progress...")
-        
+
         data = {"label": [], "template": [], "features_name": []}
 
         extracted_features = extract_features(
-                pd.DataFrame(ts),
-                column_id="id",
-                column_sort="time",
-                n_jobs=8,
-                show_warnings=False,
-                disable_progressbar=False,
-                profile=False,
-                impute_function=impute
-            )         
+            pd.DataFrame(ts),
+            column_id="id",
+            column_sort="time",
+            n_jobs=8,
+            show_warnings=False,
+            disable_progressbar=False,
+            profile=False,
+            impute_function=impute
+        )
 
-        
         features_name = extracted_features.columns.tolist()
 
         for e in extracted_features.iterrows():
             label = "_".join(e[0].split("_")[:-1])
             data["label"].append(label)
 
-       
         for features_list in extracted_features.to_numpy():
             ext_feat_list = []
             for feature in features_list:
                 ext_feat_list.append(feature)
 
             data["template"].append(ext_feat_list)
-       
+
         # save just one feature name list
-        data["features_name"] = features_name   
-        
+        data["features_name"] = features_name
+
         print("Feature extraction completed!")
-        
 
         print("Dumping templates data")
         with open(config.TEMPLATES_PATH, "w") as convert_file:
@@ -267,15 +262,15 @@ class WBBRecogniser:
         templates = []
 
         extracted_features = extract_features(
-                ts,
-                column_id="id",
-                column_sort="time",
-                n_jobs=1,
-                show_warnings=False,
-                disable_progressbar=False,
-                profile=False,
-                impute_function=impute
-            )
+            ts,
+            column_id="id",
+            column_sort="time",
+            n_jobs=1,
+            show_warnings=False,
+            disable_progressbar=False,
+            profile=False,
+            impute_function=impute
+        )
 
         list = []
         for e in extracted_features.to_numpy()[0]:
