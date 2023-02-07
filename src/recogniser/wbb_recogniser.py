@@ -25,6 +25,7 @@ class WBBRecogniser:
 
         # templates data
         self.data = {}
+        self.features_name = []
 
         self.x_train = None
         self.x_test = None
@@ -45,40 +46,19 @@ class WBBRecogniser:
     def __read_datas(self):
         with open(config.TEMPLATES_PATH) as json_file:
             self.data = json.load(json_file)
+            self.features_name = self.data["features_name"]
 
     # Split dataset in train and test set
     def __split_train_test(self):
+
         print("Loading templates data")
         self.__read_datas()
 
-        x_feature = self.data["template"]
-        y_label = self.data["label"]
-        features_name = self.data["features_name"]
-
-        df = pd.DataFrame(index=y_label, data=x_feature)
-        df.columns = features_name
-
-        print("Feature selection in progress...")
-        # selected_feature evaluates the importance of the different extracted features
-        selected_feature = select_features(df, pd.Series(data=y_label, index=y_label))
-
-        relevance_table = calculate_relevance_table(selected_feature, pd.Series(data=y_label, index=y_label))
-        relevance_table = relevance_table[relevance_table.relevant]
-        relevance_table.sort_values("p_value", inplace=True)
-
-        # filtering on selected features
-        indices = []
-        for e in relevance_table["feature"]:  # riducibile ex ->  for e in relevance_table["feature"][:500]:
-            indices.append(selected_feature.columns.get_loc(e))
-
-        rel_features = []
-        for f in selected_feature.to_numpy():
-            temp = []
-            for idx in indices:
-                temp.append(f[idx])
-            rel_features.append(temp)
-
-        print("Feature selection completed!")
+        rel_features, y_label, features_name = self.__select_feature_extracted(
+            x_feature=self.data["template"],
+            y_label=self.data["label"],
+            features_name=self.data["features_name"],
+        )
 
         print("Splitting Dataset")
 
@@ -107,7 +87,7 @@ class WBBRecogniser:
             print("Initializing models")
             self.standard_scaler = StandardScaler()
             self.lr_model = LogisticRegression(max_iter=10000)
-            self.svm_model = svm.SVC()
+            self.svm_model = svm.SVC(probability=True)
 
         print("Models training in progress...")
 
@@ -137,84 +117,54 @@ class WBBRecogniser:
             dump(self.kneighbors_classifier, config.KNEIGHBORS_CLASSIFIER_DUMP_PATH)
             dump(self.svm_model, config.SVM_MODEL_DUMP_PATH)
 
-    @staticmethod
-    def __extract_feature_from_samples():
+    def __extract_feature_from_samples(self):
 
         print("Samples processing in progress...")
 
         # get samples directory list name
         list_dir = os.listdir(config.SAMPLES_DIR_PATH)
 
-        # templates = []
-
-        # for directory in list_dir:
-        #    # get samples file list name
-        #    file_list = os.listdir(config.SAMPLES_DIR_PATH + "/" + directory + "")
-
-        #    for filename in file_list:
-        #        ts = {"id": [], "time": [], "m_x": [], "m_y": []}
-        #        sample = np.array(
-        #            np.loadtxt(config.SAMPLES_DIR_PATH + "/" + directory + "/" + filename + "", dtype=float))
-
-        #        for temp in sample:
-        #            ts["m_x"].append(temp[5])
-        #            ts["m_y"].append(temp[6])
-        #            ts["time"].append(temp[0])
-        #            ts["id"].append(directory)
-
-        #        if len(sample) > 0:
-        #            templates.append(pd.DataFrame(ts))
-
-        # for id, elem in enumerate(templates):
-        #    print("fe cycle id: " + str(id))
-        #    extracted_features = extract_features(
-        #        elem,
-        #        column_id="id",
-        #        column_sort="time",
-        #        n_jobs=1,
-        #        show_warnings=False,
-        #        disable_progressbar=False,
-        #        profile=False,
-        #        impute_function=impute
-        #    )
-
-        #    data["label"].append(elem["id"][0])
-
-        #    ext_feat_list = []
-        #    features_name = extracted_features.columns.tolist()
-
-        #    for e in extracted_features.to_numpy()[0]:
-        #        ext_feat_list.append(e)
-
-        #    data["template"].append(ext_feat_list)
-        #    # save just one feature name list
-        #    data["features_name"] = features_name
-
         ts = {"id": [], "time": [], "m_x": [], "m_y": []}
 
         for directory in list_dir:
             # get samples file list name
             file_list = os.listdir(config.SAMPLES_DIR_PATH + "/" + directory + "")
-            ctr = 1
-            for filename in file_list:
+
+            for ctr, filename in enumerate(file_list):
                 sample = np.array(
                     np.loadtxt(config.SAMPLES_DIR_PATH + "/" + directory + "/" + filename + "", dtype=float))
 
-                for temp in sample:
-                    ts["m_x"].append(temp[5])
-                    ts["m_y"].append(temp[6])
-                    ts["time"].append(temp[0])
-                    ts["id"].append(directory + "_" + str(ctr))
-
-                ctr += 1
+                self.__normalize_sample_to_timeseries(sample, id=directory, ts=ts)
 
         print("Samples processing completed!")
+
+        data = self.__extract_features_from_timeseries(ts)
+
+        print("Dumping templates data")
+        with open(config.TEMPLATES_PATH, "w") as convert_file:
+            convert_file.write(json.dumps(data))
+
+    @staticmethod
+    def __normalize_sample_to_timeseries(sample, id, ts=None):
+        if ts is None:
+            ts = {"id": [], "time": [], "m_x": [], "m_y": []}
+
+        for idx, temp in enumerate(sample):
+            ts["m_x"].append(temp[5])
+            ts["m_y"].append(temp[6])
+            ts["time"].append(temp[0])
+            ts["id"].append(id)  # + "_" + str(idx)
+
+        return ts
+
+    @staticmethod
+    def __extract_features_from_timeseries(timeseries, features_filter=None):
         print("Feature extraction in progress...")
 
         data = {"label": [], "template": [], "features_name": []}
 
         extracted_features = extract_features(
-            pd.DataFrame(ts),
+            pd.DataFrame(timeseries),
             column_id="id",
             column_sort="time",
             n_jobs=8,
@@ -224,10 +174,20 @@ class WBBRecogniser:
             impute_function=impute
         )
 
-        features_name = extracted_features.columns.tolist()
+        # filter features if required
+        if features_filter is not None:
+            extracted_features = extracted_features[features_filter]
+            features_name = features_filter
+        # set features_name list with the extracted ones
+        else:
+            features_name = extracted_features.columns.tolist()
 
-        for e in extracted_features.iterrows():
-            label = "_".join(e[0].split("_")[:-1])
+        # remove index at the end of the label if it is present and setting label list
+        for idx, e in enumerate(extracted_features.iterrows()):
+            if "_" in e[0]:
+                label = "_".join(e[0].split("_")[:-1])
+            else:
+                label = e[0]
             data["label"].append(label)
 
         for features_list in extracted_features.to_numpy():
@@ -241,44 +201,48 @@ class WBBRecogniser:
         data["features_name"] = features_name
 
         print("Feature extraction completed!")
+        return data
 
-        print("Dumping templates data")
-        with open(config.TEMPLATES_PATH, "w") as convert_file:
-            convert_file.write(json.dumps(data))
+    def __select_feature_extracted(self, x_feature, y_label, features_name):
 
-    def test_sample(self, pathname):
+        df = pd.DataFrame(index=y_label, data=x_feature)
+        df.columns = features_name
 
-        ts = {"id": [], "time": [], "m_x": [], "m_y": []}
+        print("Feature selection in progress...")
+        # selected_feature evaluates the importance of the different extracted features
+        selected_feature = select_features(df, pd.Series(data=y_label, index=y_label))
+
+        relevance_table = calculate_relevance_table(selected_feature, pd.Series(data=y_label, index=y_label))
+        relevance_table = relevance_table[relevance_table.relevant]
+        relevance_table.sort_values("p_value", inplace=True)
+
+        # update current features list
+        self.features_name = relevance_table["feature"]
+
+        # filtering on selected features
+        indices = []
+        for e in relevance_table["feature"]:  # riducibile ex ->  for e in relevance_table["feature"][:500]:
+            indices.append(selected_feature.columns.get_loc(e))
+
+        rel_features = []
+        for f in selected_feature.to_numpy():
+            temp = []
+            for idx in indices:
+                temp.append(f[idx])
+            rel_features.append(temp)
+
+        print("Feature selection completed!")
+
+        return rel_features, y_label, relevance_table["feature"]
+
+    def test_sample(self, pathname, directory="/"):
+
         sample = np.array(np.loadtxt(pathname, dtype=float))
 
-        for temp in sample:
-            ts["m_x"].append(temp[5])
-            ts["m_y"].append(temp[6])
-            ts["time"].append(temp[0])
-            ts["id"].append(pathname)
+        ts = self.__normalize_sample_to_timeseries(sample, id=directory)
+        data = self.__extract_features_from_timeseries(pd.DataFrame(ts), self.features_name)
 
-        ts = pd.DataFrame(ts)
-
-        templates = []
-
-        extracted_features = extract_features(
-            ts,
-            column_id="id",
-            column_sort="time",
-            n_jobs=1,
-            show_warnings=False,
-            disable_progressbar=False,
-            profile=False,
-            impute_function=impute
-        )
-
-        list = []
-        for e in extracted_features.to_numpy()[0]:
-            list.append(e)
-
-        templates.append(list)
-
-        scaled_templates = self.standard_scaler.transform(templates)
+        scaled_templates = self.standard_scaler.transform(data["template"])
 
         print()
         print("lrModel: ", self.lr_model.predict(scaled_templates))
@@ -286,4 +250,4 @@ class WBBRecogniser:
         print("svm: ", self.svm_model.predict(scaled_templates))
 
     def run_test(self, pathname):
-        self.test_sample(pathname)
+        self.test_sample(pathname, directory="Test")
