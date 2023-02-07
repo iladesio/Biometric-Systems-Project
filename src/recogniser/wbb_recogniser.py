@@ -13,6 +13,8 @@ from tqdm import tqdm
 from tsfresh import extract_features, select_features
 from tsfresh.feature_selection.relevance import calculate_relevance_table
 from tsfresh.utilities.dataframe_functions import impute
+import matplotlib.pyplot as plt
+
 
 from src.utilities import config
 
@@ -31,6 +33,8 @@ class WBBRecogniser:
         self.x_test = None
         self.y_train = None
         self.y_test = None
+
+        self.impostors = None
 
         # models
         self.standard_scaler = None
@@ -61,6 +65,10 @@ class WBBRecogniser:
         )
 
         print("Splitting Dataset")
+
+        rel_features = rel_features[:-60]
+        y_label = y_label[:-60]
+        self.impostors = rel_features[-60:]
 
         # x_train, x_test, y_train, y_test = train_test_split(x_feature, y_label, test_size=0.1, random_state=42)
         # x_train, x_test, y_train, y_test = train_test_split(selected_feature.to_numpy(), y_label, test_size=0.1, random_state=42)
@@ -110,12 +118,58 @@ class WBBRecogniser:
         print("Model accuracy for Logistic Regression: ", self.lr_model.score(transformed_x_test, self.y_test))
         print("Model accuracy for SVM: ", self.svm_model.score(transformed_x_test, self.y_test))
 
+        transformed_x_test = np.array(transformed_x_test)
+        self.impostors = np.array(self.impostors)
+
+        evaluation_test_dataset = np.concatenate((transformed_x_test,self.impostors)).tolist()
+
+        evaluation = self.__all_vs_all(evaluation_test_dataset)
+        plt.plot([i[0] for i in evaluation],[i[6] for i in evaluation],'--b')
+        plt.xlabel('threshold')
+        plt.title('FAR')
+        #plt.axis([0, 1, 0, 5000])
+        plt.show()
+
         if config.SAVE_DUMPS:
             print("Dumping models data")
             dump(self.standard_scaler, config.STANDARD_SCALER_DUMP_PATH)
             dump(self.lr_model, config.LR_MODEL_DUMP_PATH)
             dump(self.kneighbors_classifier, config.KNEIGHBORS_CLASSIFIER_DUMP_PATH)
             dump(self.svm_model, config.SVM_MODEL_DUMP_PATH)
+
+
+    def __all_vs_all(self, templates):
+        labels = self.y_test
+        trainedModel = self.svm_model
+        GA = 0 
+        FR = 0 
+        GR = 0
+        FA = 0
+        idsList = os.listdir(config.SAMPLES_DIR_PATH)
+        treshold = np.arange(0, 1.005, 0.005);
+        res = []
+        for t in treshold:
+            GA = 0 
+            FR = 0 
+            GR = 0
+            FA = 0
+            for probe in templates:
+                currentProbeIdx = templates.index(probe)
+                probabilities = trainedModel.predict_proba(np.array(probe).reshape(1,-1))
+                for p in probabilities[0]:
+                    if p <= t:
+                        if currentProbeIdx<len(labels) and np.where(probabilities[0] == p) == idsList.index(labels[currentProbeIdx]):
+                            GA+=1
+                        else:
+                            FA+=1
+                    else:
+                        if currentProbeIdx<len(labels) and np.where(probabilities[0] == p) == idsList.index(labels[currentProbeIdx]):
+                            FR+=1
+                        else:
+                            GR+=1
+            res.append([t, GA, FR, GR, FA, GA/570, FA/60, FR/570, GR/60])
+        return res
+
 
     def __extract_feature_from_samples(self):
 
