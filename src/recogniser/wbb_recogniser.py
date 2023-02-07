@@ -249,5 +249,15 @@ class WBBRecogniser:
         print("neigh: ", self.kneighbors_classifier.predict(scaled_templates))
         print("svm: ", self.svm_model.predict(scaled_templates))
 
+        # return self.lr_model.decision_function(scaled_templates)
+
     def run_test(self, pathname):
         self.test_sample(pathname, directory="Test")
+
+    def run_all_test(self):
+
+        file_list = os.listdir(config.TEST_DIR_PATH + "/")
+        probabilities = []
+
+        for ctr, filename in enumerate(file_list):
+            probabilities.append(self.test_sample("../data/Test/" + filename, directory="Test"))
