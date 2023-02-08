@@ -334,12 +334,10 @@ class WBBRecogniser:
             features_name=self.data["features_name"],
         )
 
-        evaluation = Evaluation()
+        evaluation = Evaluation(y=y_label)
 
         # verification
-        verificationResults = evaluation.eval_verification(testDataset=self.y_test, features=rel_features)
-        print(verificationResults)
+        evaluation.eval_verification(testDataset=self.y_test, features=rel_features, )
 
         # identification
-        identificationResults = evaluation.eval_identification(testDataset=self.y_test, features=rel_features)
-        print(identificationResults)
+        evaluation.eval_identification(testDataset=self.y_test, features=rel_features)
