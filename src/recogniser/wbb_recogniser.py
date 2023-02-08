@@ -193,18 +193,18 @@ class WBBRecogniser:
                 sample = np.array(
                     np.loadtxt(config.SAMPLES_DIR_PATH + "/" + directory + "/" + filename + "", dtype=float))
 
-                self.__normalize_sample_to_timeseries(sample, id=directory, ts=ts)
+                self.normalize_sample_to_timeseries(sample, id=directory, ts=ts)
 
         print("Samples processing completed!")
 
-        data = self.__extract_features_from_timeseries(ts)
+        data = self.extract_features_from_timeseries(ts)
 
         print("Dumping templates data")
         with open(config.TEMPLATES_PATH, "w") as convert_file:
             convert_file.write(json.dumps(data))
 
     @staticmethod
-    def __normalize_sample_to_timeseries(sample, id, ts=None):
+    def normalize_sample_to_timeseries(sample, id, ts=None):
         if ts is None:
             ts = {"id": [], "time": [], "m_x": [], "m_y": []}
 
@@ -217,7 +217,7 @@ class WBBRecogniser:
         return ts
 
     @staticmethod
-    def __extract_features_from_timeseries(timeseries, features_filter=None):
+    def extract_features_from_timeseries(timeseries, features_filter=None):
         print("Feature extraction in progress...")
 
         data = {"label": [], "template": [], "features_name": []}
@@ -301,8 +301,8 @@ class WBBRecogniser:
 
         sample = np.array(np.loadtxt(pathname, dtype=float))
 
-        ts = self.__normalize_sample_to_timeseries(sample, id=directory)
-        data = self.__extract_features_from_timeseries(pd.DataFrame(ts), self.features_name)
+        ts = self.normalize_sample_to_timeseries(sample, id=directory)
+        data = self.extract_features_from_timeseries(pd.DataFrame(ts), self.features_name)
 
         scaled_templates = self.standard_scaler.transform(data["template"])
 
