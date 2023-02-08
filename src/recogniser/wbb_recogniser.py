@@ -3,8 +3,7 @@ import os
 
 import numpy as np
 import pandas as pd
-from joblib import load
-from scipy.spatial.distance import squareform, pdist
+from joblib import dump, load
 from sklearn import svm
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -81,6 +80,8 @@ class WBBRecogniser:
         self.y_train = y_train
         self.y_test = y_test
 
+        self.features_name = features_name.tolist()
+
     def __setup_models(self):
 
         # setup train and test datas
@@ -132,6 +133,7 @@ class WBBRecogniser:
         plt.title('FAR')
         # plt.axis([0, 1, 0, 5000])
         plt.show()
+        """
 
         if config.SAVE_DUMPS:
             print("Dumping models data")
@@ -139,7 +141,6 @@ class WBBRecogniser:
             dump(self.lr_model, config.LR_MODEL_DUMP_PATH)
             dump(self.kneighbors_classifier, config.KNEIGHBORS_CLASSIFIER_DUMP_PATH)
             dump(self.svm_model, config.SVM_MODEL_DUMP_PATH)
-        """
 
     def __all_vs_all(self, templates):
         labels = self.y_test
@@ -211,7 +212,7 @@ class WBBRecogniser:
             ts["m_x"].append(temp[5])
             ts["m_y"].append(temp[6])
             ts["time"].append(temp[0])
-            ts["id"].append(id)  # + "_" + str(idx)
+            ts["id"].append(id)  # + "_" + str(idx) todo controllare che sia corretto
 
         return ts
 
@@ -257,9 +258,6 @@ class WBBRecogniser:
 
         # save just one feature name list
         data["features_name"] = features_name
-
-        distance_matrix = pd.DataFrame(squareform(pdist(extracted_features.iloc[:, :-1], metric="euclidean")),
-                                       columns=extracted_features.index, index=extracted_features.index)
 
         print("Feature extraction completed!")
         return data
@@ -313,8 +311,6 @@ class WBBRecogniser:
         print("neigh: ", self.kneighbors_classifier.predict(scaled_templates))
         print("svm: ", self.svm_model.predict(scaled_templates))
 
-        # return self.lr_model.decision_function(scaled_templates)
-
     def run_test(self, pathname):
         self.test_sample(pathname, directory="Test")
 
@@ -329,15 +325,15 @@ class WBBRecogniser:
     def perform_evaluation(self):
 
         rel_features, y_label, features_name = self.__select_feature_extracted(
-            x_feature=self.data["template"],
-            y_label=self.data["label"],
-            features_name=self.data["features_name"],
+            x_feature=self.x_test,
+            y_label=self.y_test,
+            features_name=self.features_name,
         )
 
-        evaluation = Evaluation(y=y_label)
+        evaluation = Evaluation(features=rel_features, y_labels=y_label)
 
         # verification
-        evaluation.eval_verification(testDataset=self.y_test, features=rel_features, )
+        evaluation.eval_verification()
 
         # identification
-        evaluation.eval_identification(testDataset=self.y_test, features=rel_features)
+        evaluation.eval_identification()

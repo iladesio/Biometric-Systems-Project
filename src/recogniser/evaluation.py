@@ -1,76 +1,91 @@
+# plt
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import squareform, pdist
 
-# plt
-import matplotlib.pyplot as plt
-
 
 class Evaluation:
 
-    def __init__(self, y):
-        print("glich of us")
-        self.y_label = y
+    def __init__(self, features, y_labels):
 
-    @staticmethod
-    def getId(encodedLabel, dataset, subject=True):
-        id = dataset.labelToId(int(encodedLabel))
-        if subject:
-            return id[:-1]
-        else:
-            return id
+        self.features = features
+        self.y_label = y_labels
 
-    @staticmethod
-    def computeDistanceMatrix(features, metric='euclidean'):
-        return pd.DataFrame(squareform(pdist(np.array(features), metric=metric)))
-        # columns=features.index, index=features.index)
+        # treshold lists
+        self.decimal_tresholds = np.arange(0, 50, 0.25)
+        self.distance_matrix = self.compute_distance_matrix().to_numpy()
 
-    def verification(self, distanceMatrix, thresholds, features, dataset):
+    def compute_distance_matrix(self, metric='seuclidean'):
+        return pd.DataFrame(squareform(pdist(np.array(self.features), metric=metric)))
+
+    def verification(self, distance_matrix=None, thresholds=None):
+
+        if distance_matrix is None:
+            distance_matrix = self.distance_matrix
+
+        if thresholds is None:
+            thresholds = self.decimal_tresholds
+
         # dictionary that will contain all the results
         results = {t: dict() for t in thresholds}
-        rows, cols = distanceMatrix.shape
+        rows, cols = distance_matrix.shape
+
         for index, t in enumerate(thresholds):
             # For each treshold we test the method
             ga, fa, fr, gr = 0, 0, 0, 0
+
             for y in range(rows):
-                rowLabel = self.y_label[y]  # self.getId(features.iloc[y].label, dataset)
+                row_label = self.y_label[y]
                 # results are grouped by label (here we're doing verification with multiple templates)
-                groupedResults = dict()
+                grouped_results = dict()
+
                 for x in range(cols):
                     # same probe => skip
-                    if x == y: continue
+                    if x == y:
+                        continue
                     # column label
-                    colLabel = self.y_label[x]  # self.getId(features.iloc[x].label, dataset)
+                    col_label = self.y_label[x]
                     # storing results
-                    groupedResults.setdefault(colLabel, []).append(distanceMatrix[y, x])
-                for label in groupedResults:
+                    grouped_results.setdefault(col_label, []).append(distance_matrix[y, x])
+
+                for label in grouped_results:
                     # take minimum distance between templates
-                    d = min(groupedResults[label])
+                    d = min(grouped_results[label])
                     if d < t:
                         # we have an acceptance, genuine or false?
-                        if rowLabel == label:
+                        if row_label == label:
                             ga += 1
                         else:
                             fa += 1
                     else:
                         # we have a rejection, genuine or false?
-                        if rowLabel == label:
+                        if row_label == label:
                             fr += 1
                         else:
                             gr += 1
-            results[t] = {'gar': ga / rows, 'far': fa / (rows * (len(groupedResults) - 1)), 'frr': fr / rows,
-                          'grr': gr / (rows * (len(groupedResults) - 1))}
+
+            results[t] = {'gar': ga / rows, 'far': fa / (rows * (len(grouped_results) - 1)), 'frr': fr / rows,
+                          'grr': gr / (rows * (len(grouped_results) - 1))}
+
             if index % (len(thresholds) // 10) == 0:
                 print(
-                    f"gar: {results[t]['gar']}\t far: {results[t]['far']}\t frr: {results[t]['frr']}\t grr: {results[t]['grr']}")
+                    f"gar: {results[t]['gar']}\t "
+                    f"far: {results[t]['far']}\t "
+                    f"frr: {results[t]['frr']}\t "
+                    f"grr: {results[t]['grr']}")
+
         return results
 
-    def plotVerificationResults(self, results):
+    @staticmethod
+    def plot_verification_results(results):
+
         fig, (axERR, axROC) = plt.subplots(ncols=2)
         fig.set_size_inches(10, 5)
         thresholds = []
         fars = []
         frrs = []
+
         for t in results:
             thresholds += [t]
             fars += [results[t]['far']]
@@ -89,57 +104,88 @@ class Evaluation:
 
         plt.show()
 
-    @staticmethod
-    def similarTo(probeIdx, features, distanceMatrix):
+    def similar_to(self, probe_idx, distance_matrix=None):
+
+        if distance_matrix is None:
+            distance_matrix = self.distance_matrix
+
         similarities = list(
-            sorted([i for i in range(distanceMatrix[probeIdx].shape[0])], key=lambda i: distanceMatrix[probeIdx][i]))
-        similarities.remove(probeIdx)
+            sorted([i for i in range(distance_matrix[probe_idx].shape[0])],
+                   key=lambda i: distance_matrix[probe_idx][i]))
+
+        similarities.remove(probe_idx)
+
         return similarities
 
-    def identification(self, distanceMatrix, thresholds, features, dataset):
+    def identification(self, distance_matrix=None, thresholds=None):
+
+        if distance_matrix is None:
+            distance_matrix = self.distance_matrix
+
+        if thresholds is None:
+            thresholds = self.decimal_tresholds
+
         # dictionary that will contain all the results
         results = {t: dict() for t in thresholds}
-        rows, cols = distanceMatrix.shape
+        rows, cols = distance_matrix.shape
         di = {t: [0 for _ in range(rows)] for t in thresholds}
         _dir = {t: [0 for _ in range(rows)] for t in thresholds}
+
         for index, t in enumerate(thresholds):
             fa, gr = 0, 0
+
             for y in range(rows):
-                rowLabel = self.y_label[y]  # self.getId(features.iloc[y].label, dataset)
-                similarIndex = self.similarTo(y, features, distanceMatrix)
-                if distanceMatrix[y][similarIndex[0]] <= t:
-                    if rowLabel == self.y_label[similarIndex[0]]:  # self.getId(features.iloc[similarIndex[0]].label, dataset):
+                row_label = self.y_label[y]
+                similar_index = self.similar_to(y, distance_matrix)
+
+                if distance_matrix[y][similar_index[0]] <= t:
+                    if row_label == self.y_label[similar_index[0]]:
                         di[t][0] += 1
+
                         # find impostor case
-                        for k in similarIndex:
-                            if rowLabel != self.y_label[k] and distanceMatrix[y][k] <= t:  # self.getId(features.iloc[k].label, dataset) and distanceMatrix[y][k] <= t:
+                        for k in similar_index:
+                            if row_label != self.y_label[k] and distance_matrix[y][k] <= t:
                                 fa += 1
                                 break
                     else:
-                        for k, indexAtRankK in enumerate(similarIndex):
-                            if rowLabel == self.y_label[indexAtRankK] and distanceMatrix[y][indexAtRankK] <= t:  # self.getId(features.iloc[indexAtRankK].label, dataset) and distanceMatrix[y][indexAtRankK] <= t:
+                        for k, index_at_rank_k in enumerate(similar_index):
+                            if row_label == self.y_label[index_at_rank_k] and distance_matrix[y][index_at_rank_k] <= t:
                                 fa += 1
                                 di[t][k] += 1
                                 break
                 else:
                     gr += 1
+
             _dir[t][0] = di[t][0] / rows
+
             for i in range(1, rows):
                 _dir[t][i] = di[t][i] / rows + _dir[t][i - 1]
+
             results[t] = {'far': fa / rows, 'grr': gr / rows, 'dir': _dir[t], 'frr': 1 - _dir[t][0]}
+
             if index % (len(thresholds) // 10) == 0:
                 print(
-                    f"dir({t}, 1): {results[t]['dir'][0]}\t far: {results[t]['far']}\t frr: {results[t]['frr']}\t grr: {results[t]['grr']}")
+                    f"dir({t}, 1): {results[t]['dir'][0]}\t "
+                    f"far: {results[t]['far']}\t "
+                    f"frr: {results[t]['frr']}\t "
+                    f"grr: {results[t]['grr']}")
+
         return results
 
-    def cumulativeMatchingScore(self, distanceMatrix, features, dataset):
-        rows, cols = distanceMatrix.shape
+    def cumulative_matching_score(self, distance_matrix=None):
+
+        if distance_matrix is None:
+            distance_matrix = self.distance_matrix
+
+        rows, cols = distance_matrix.shape
         cms = [0 for _ in range(rows)]
+
         for y in range(rows):
-            rowLabel = self.y_label[y]  # self.getId(features.iloc[y].label, dataset)
-            similarIndex = self.similarTo(y, features, distanceMatrix)
-            for k, indexAtRankK in enumerate(similarIndex):
-                if rowLabel == self.y_label[indexAtRankK]:  # self.getId(features.iloc[indexAtRankK].label, dataset):
+            row_label = self.y_label[y]
+            similar_index = self.similar_to(y)
+
+            for k, indexAtRankK in enumerate(similar_index):
+                if row_label == self.y_label[indexAtRankK]:
                     cms[k] += 1
                     break
         # rr
@@ -148,13 +194,16 @@ class Evaluation:
             cms[k] = cms[k] / rows + cms[k - 1]
         return cms
 
-    def plotIdentificationResults(self, results, cms):
+    @staticmethod
+    def plot_identification_results(results, cms):
+
         fig, (axERR, axDIR, axCMS) = plt.subplots(ncols=3)
         fig.set_size_inches(20, 5)
         thresholds = []
         fars = []
         frrs = []
         dir1 = []
+
         for t in results:
             thresholds += [t]
             fars += [results[t]['far']]
@@ -182,21 +231,17 @@ class Evaluation:
 
         plt.show()
 
-    def eval_verification(self, testDataset, features):
-        dm = self.computeDistanceMatrix(features).to_numpy()
-        thresholds = [t for t in range(0, 185000, 200)]
+    def eval_verification(self):
 
         # verification
         print("Verification:")
-        verification_results = self.verification(dm, thresholds, features, testDataset)
-        self.plotVerificationResults(verification_results)
+        verification_results = self.verification()
+        self.plot_verification_results(verification_results)
 
-    def eval_identification(self, testDataset, features):
-        dm = self.computeDistanceMatrix(features).to_numpy()
-        thresholds = [t for t in range(0, 185000, 200)]
+    def eval_identification(self):
 
         # identification
         print("Identification:")
-        identification_results = self.identification(dm, thresholds, features, testDataset)
-        cms = self.cumulativeMatchingScore(dm, features, testDataset)
-        self.plotIdentificationResults(identification_results, cms)
+        identification_results = self.identification()
+        cms = self.cumulative_matching_score()
+        self.plot_identification_results(identification_results, cms)

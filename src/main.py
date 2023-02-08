@@ -7,5 +7,6 @@ def main():
     # wbb_recogniser.run_all_test()
     wbb_recogniser.perform_evaluation()
 
+
 if __name__ == "__main__":
     main()
