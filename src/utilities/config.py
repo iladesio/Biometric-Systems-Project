@@ -4,6 +4,7 @@ EXTRACT_FEATURE_FROM_SAMPLES = False
 TEST_DIR_PATH = "../data/Test"
 SAMPLES_DIR_PATH = "../data/Samples"
 TEMPLATES_PATH = "../data/Templates/templates"
+TEST_DEMO_PATH = "demo/DemoSample"
 
 """ models constants """
 SAVE_DUMPS = True
