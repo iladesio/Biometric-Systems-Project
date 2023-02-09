@@ -52,7 +52,7 @@ class Evaluation:
                 for label in grouped_results:
                     # take minimum distance between templates
                     d = min(grouped_results[label])
-                    if d < t:
+                    if d <= t:
                         # we have an acceptance, genuine or false?
                         if row_label == label:
                             ga += 1
@@ -80,7 +80,7 @@ class Evaluation:
     @staticmethod
     def plot_verification_results(results):
 
-        fig, (axERR, axROC) = plt.subplots(ncols=2)
+        fig, (axERR, axDET, axROC) = plt.subplots(ncols=3)
         fig.set_size_inches(10, 5)
         thresholds = []
         fars = []
@@ -91,16 +91,23 @@ class Evaluation:
             fars += [results[t]['far']]
             frrs += [results[t]['frr']]
 
-        axERR.plot(thresholds, fars, 'r--', label='FAR')
-        axERR.plot(thresholds, frrs, 'g--', label='FRR')
+        axERR.plot(thresholds, fars, 'r', label='FAR')
+        axERR.plot(thresholds, frrs, 'g', label='FRR')
         axERR.legend(loc='center right', shadow=True, fontsize='x-large')
         axERR.set_xlabel('Threshold')
         axERR.title.set_text('FAR vs FRR')
 
         axROC.plot(fars, list(map(lambda frr: 1 - frr, frrs)))
-        axROC.set_ylabel('1-FRR')
+        axROC.set_ylabel('GAR=1-FRR')
         axROC.set_xlabel('FAR')
         axROC.title.set_text('ROC Curve')
+
+        axDET.plot(fars, frrs)
+        axDET.set_ylabel('FRR')
+        axDET.set_yscale('log')
+        axDET.set_xscale('log')
+        axDET.set_xlabel('FAR')
+        axDET.title.set_text('DET Curve')
 
         plt.show()
 
@@ -197,7 +204,7 @@ class Evaluation:
     @staticmethod
     def plot_identification_results(results, cms):
 
-        fig, (axERR, axDIR, axCMS) = plt.subplots(ncols=3)
+        fig, (axERR, axROC, axDET,axDIR, axCMS) = plt.subplots(ncols=5)
         fig.set_size_inches(20, 5)
         thresholds = []
         fars = []
@@ -211,11 +218,24 @@ class Evaluation:
             dir1 += [results[t]['dir'][0]]
 
         # FAR vs FRR
-        axERR.plot(thresholds, fars, 'r--', label='FAR')
-        axERR.plot(thresholds, frrs, 'g--', label='FRR')
+        axERR.plot(thresholds, fars, 'r', label='FAR')
+        axERR.plot(thresholds, frrs, 'g', label='FRR')
         axERR.set_xlabel('Threshold')
         axERR.legend(loc='lower right', shadow=True, fontsize='x-large')
         axERR.title.set_text('FAR and FRR')
+
+        
+        axDET.plot(fars, frrs)
+        axDET.set_ylabel('FRR')
+        axDET.set_yscale('log')
+        axDET.set_xscale('log')
+        axDET.set_xlabel('FAR')
+        axDET.title.set_text('DET Curve')
+
+        axROC.plot(fars, list(map(lambda frr: 1 - frr, frrs)))
+        axROC.set_ylabel('GAR=1-FRR')
+        axROC.set_xlabel('FAR')
+        axROC.title.set_text('ROC Curve')
 
         # DIR(t, 1)
         axDIR.plot(thresholds, dir1)
