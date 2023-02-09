@@ -329,6 +329,12 @@ class WBBRecogniser:
             y_label=self.y_test,
             features_name=self.features_name,
         )
+        from sklearn.preprocessing import MinMaxScaler
+        scaler = MinMaxScaler()
+
+        # Don't cheat - fit only on training data
+        scaler.fit(rel_features)
+        rel_features = scaler.transform(rel_features)
 
         evaluation = Evaluation(features=rel_features, y_labels=y_label)
 
