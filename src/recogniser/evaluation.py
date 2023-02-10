@@ -14,7 +14,7 @@ class Evaluation:
         self.y_label = y_labels
 
         # treshold lists
-        self.decimal_tresholds = np.arange(0, 50, 0.01)
+        self.decimal_tresholds = np.arange(0, 50, 0.05)
         self.distance_matrix = self.compute_distance_matrix().to_numpy()
 
     def compute_distance_matrix(self, metric='seuclidean'):
