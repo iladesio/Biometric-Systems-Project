@@ -8,6 +8,7 @@ from sklearn import svm
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from tsfresh import extract_features, select_features
@@ -121,7 +122,7 @@ class WBBRecogniser:
 
         print("Model accuracy for Logistic Regression: ", self.lr_model.score(transformed_x_test, self.y_test))
         print("Model accuracy for SVM: ", self.svm_model.score(transformed_x_test, self.y_test))
-        
+
 
         if config.SAVE_DUMPS:
             print("Dumping models data")
@@ -129,7 +130,7 @@ class WBBRecogniser:
             dump(self.lr_model, config.LR_MODEL_DUMP_PATH)
             dump(self.kneighbors_classifier, config.KNEIGHBORS_CLASSIFIER_DUMP_PATH)
             dump(self.svm_model, config.SVM_MODEL_DUMP_PATH)
-            
+
 
     def __extract_feature_from_samples(self):
 
@@ -289,10 +290,17 @@ class WBBRecogniser:
         scaler.fit(rel_features)
         rel_features = scaler.transform(rel_features)
 
-        evaluation = Evaluation(features=rel_features, y_labels=y_label)
+        # metrics = ['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 'cosine', 'dice', 'euclidean',
+        #            'hamming', 'jaccard', 'jensenshannon', 'matching', 'minkowski',
+        #            'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule']
 
-        # verification
-        evaluation.eval_verification()
+        metrics = ["euclidean"]
 
-        # identification
-        evaluation.eval_identification()
+        for metric in metrics:
+            evaluation = Evaluation(features=rel_features, y_labels=y_label, current_metric=metric)
+
+            # verification
+            evaluation.eval_verification()
+
+            # identification
+            evaluation.eval_identification()
