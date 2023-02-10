@@ -80,7 +80,7 @@ class Evaluation:
     @staticmethod
     def plot_verification_results(results):
 
-        fig, (axERR, axDET, axROC) = plt.subplots(ncols=3)
+        fig, (axERR, axROC, axDET) = plt.subplots(ncols=3)
         fig.set_size_inches(10, 5)
         thresholds = []
         fars = []
@@ -104,9 +104,9 @@ class Evaluation:
 
         axDET.plot(fars, frrs)
         axDET.set_ylabel('FRR')
+        axDET.set_xlabel('FAR')
         axDET.set_yscale('log')
         axDET.set_xscale('log')
-        axDET.set_xlabel('FAR')
         axDET.title.set_text('DET Curve')
 
         plt.show()
@@ -223,13 +223,12 @@ class Evaluation:
         axERR.set_xlabel('Threshold')
         axERR.legend(loc='lower right', shadow=True, fontsize='x-large')
         axERR.title.set_text('FAR and FRR')
-
         
         axDET.plot(fars, frrs)
         axDET.set_ylabel('FRR')
+        axDET.set_xlabel('FAR')
         axDET.set_yscale('log')
         axDET.set_xscale('log')
-        axDET.set_xlabel('FAR')
         axDET.title.set_text('DET Curve')
 
         axROC.plot(fars, list(map(lambda frr: 1 - frr, frrs)))
