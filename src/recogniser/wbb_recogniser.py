@@ -8,6 +8,7 @@ from sklearn import svm
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from tsfresh import extract_features, select_features
@@ -329,17 +330,24 @@ class WBBRecogniser:
             y_label=self.y_test,
             features_name=self.features_name,
         )
-        from sklearn.preprocessing import MinMaxScaler
+
         scaler = MinMaxScaler()
 
         # Don't cheat - fit only on training data
         scaler.fit(rel_features)
         rel_features = scaler.transform(rel_features)
 
-        evaluation = Evaluation(features=rel_features, y_labels=y_label)
+        # metrics = ['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 'cosine', 'dice', 'euclidean',
+        #            'hamming', 'jaccard', 'jensenshannon', 'matching', 'minkowski',
+        #            'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule']
 
-        # verification
-        evaluation.eval_verification()
+        metrics = ["euclidean"]
 
-        # identification
-        evaluation.eval_identification()
+        for metric in metrics:
+            evaluation = Evaluation(features=rel_features, y_labels=y_label, current_metric=metric)
+
+            # verification
+            evaluation.eval_verification()
+
+            # identification
+            evaluation.eval_identification()

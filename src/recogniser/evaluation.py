@@ -7,17 +7,20 @@ from scipy.spatial.distance import squareform, pdist
 
 class Evaluation:
 
-    def __init__(self, features, y_labels):
+    def __init__(self, features, y_labels, current_metric="correlation"):
 
         self.features = features
         self.y_label = y_labels
+        self.current_metric = current_metric
 
         # treshold lists
-        self.decimal_tresholds = np.arange(0, 50, 0.25)
         self.distance_matrix = self.compute_distance_matrix().to_numpy()
+        max_treshold = self.distance_matrix.max() * 0.66
+        # self.decimal_tresholds = np.arange(0, 1.5, 0.01)
+        self.decimal_tresholds = np.arange(0, max_treshold, max_treshold / 500)
 
-    def compute_distance_matrix(self, metric='seuclidean'):
-        return pd.DataFrame(squareform(pdist(np.array(self.features), metric=metric)))
+    def compute_distance_matrix(self):
+        return pd.DataFrame(squareform(pdist(np.array(self.features), metric=self.current_metric)))
 
     def verification(self, distance_matrix=None, thresholds=None):
 
@@ -77,8 +80,7 @@ class Evaluation:
 
         return results
 
-    @staticmethod
-    def plot_verification_results(results):
+    def plot_verification_results(self, results):
 
         fig, (axERR, axDET, axROC) = plt.subplots(ncols=3)
         fig.set_size_inches(10, 5)
@@ -110,6 +112,9 @@ class Evaluation:
         axDET.title.set_text('DET Curve')
 
         plt.show()
+
+        # plt.savefig("metrics_plot/" + self.current_metric + "_verification.png")
+        # plt.clf()
 
     def similar_to(self, probe_idx, distance_matrix=None):
 
@@ -201,10 +206,9 @@ class Evaluation:
             cms[k] = cms[k] / rows + cms[k - 1]
         return cms
 
-    @staticmethod
-    def plot_identification_results(results, cms):
+    def plot_identification_results(self, results, cms):
 
-        fig, (axERR, axROC, axDET,axDIR, axCMS) = plt.subplots(ncols=5)
+        fig, (axERR, axROC, axDET, axDIR, axCMS) = plt.subplots(ncols=5)
         fig.set_size_inches(20, 5)
         thresholds = []
         fars = []
@@ -224,7 +228,6 @@ class Evaluation:
         axERR.legend(loc='lower right', shadow=True, fontsize='x-large')
         axERR.title.set_text('FAR and FRR')
 
-        
         axDET.plot(fars, frrs)
         axDET.set_ylabel('FRR')
         axDET.set_yscale('log')
@@ -250,6 +253,9 @@ class Evaluation:
         axCMS.title.set_text('CMC')
 
         plt.show()
+
+        # plt.savefig("metrics_plot/" + self.current_metric + "_identification.png")
+        # plt.clf()
 
     def eval_verification(self):
 
