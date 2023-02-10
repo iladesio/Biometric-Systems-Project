@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import squareform, pdist
+from scipy.ndimage.filters import gaussian_filter1d
 
 
 class Evaluation:
@@ -13,7 +14,7 @@ class Evaluation:
         self.y_label = y_labels
 
         # treshold lists
-        self.decimal_tresholds = np.arange(0, 50, 0.25)
+        self.decimal_tresholds = np.arange(0, 50, 0.01)
         self.distance_matrix = self.compute_distance_matrix().to_numpy()
 
     def compute_distance_matrix(self, metric='seuclidean'):
@@ -90,6 +91,10 @@ class Evaluation:
             thresholds += [t]
             fars += [results[t]['far']]
             frrs += [results[t]['frr']]
+
+        
+        #fars = gaussian_filter1d(fars, sigma=2)
+        #frrs = gaussian_filter1d(frrs, sigma=2)
 
         axERR.plot(thresholds, fars, 'r', label='FAR')
         axERR.plot(thresholds, frrs, 'g', label='FRR')
@@ -216,6 +221,12 @@ class Evaluation:
             fars += [results[t]['far']]
             frrs += [results[t]['frr']]
             dir1 += [results[t]['dir'][0]]
+
+        #fars = gaussian_filter1d(fars, sigma=2)
+        #frrs = gaussian_filter1d(frrs, sigma=2)
+        #dir1 = gaussian_filter1d(dir1, sigma=2)
+        #cms = gaussian_filter1d(cms, sigma=2)
+
 
         # FAR vs FRR
         axERR.plot(thresholds, fars, 'r', label='FAR')

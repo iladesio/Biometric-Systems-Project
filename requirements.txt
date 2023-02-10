@@ -5,4 +5,5 @@ tqdm
 joblib
 json
 scikit-learn
+scipy
 

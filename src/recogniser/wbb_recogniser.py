@@ -163,11 +163,11 @@ class WBBRecogniser:
         if ts is None:
             ts = {"id": [], "time": [], "m_x": [], "m_y": []}
 
-        for idx, temp in enumerate(sample):
+        for temp in sample:
             ts["m_x"].append(temp[5])
             ts["m_y"].append(temp[6])
             ts["time"].append(temp[0])
-            ts["id"].append(id+ "_" + str(counter))  # + "_" + str(idx) todo controllare che sia corretto
+            ts["id"].append(id+ "_" + str(counter))
 
         return ts
 
