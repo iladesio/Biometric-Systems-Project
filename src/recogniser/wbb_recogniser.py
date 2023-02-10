@@ -14,6 +14,7 @@ from tqdm import tqdm
 from tsfresh import extract_features, select_features
 from tsfresh.feature_selection.relevance import calculate_relevance_table
 from tsfresh.utilities.dataframe_functions import impute
+from sklearn.preprocessing import MinMaxScaler
 
 from src.recogniser.evaluation import Evaluation
 from src.utilities import config
@@ -122,19 +123,6 @@ class WBBRecogniser:
         print("Model accuracy for Logistic Regression: ", self.lr_model.score(transformed_x_test, self.y_test))
         print("Model accuracy for SVM: ", self.svm_model.score(transformed_x_test, self.y_test))
 
-        """
-        transformed_x_test = np.array(transformed_x_test)
-        self.impostors = np.array(self.impostors)
-        
-        evaluation_test_dataset = np.concatenate((transformed_x_test, self.impostors)).tolist()
-
-        evaluation = self.__all_vs_all(evaluation_test_dataset)
-        plt.plot([i[0] for i in evaluation], [i[6] for i in evaluation], '--b')
-        plt.xlabel('threshold')
-        plt.title('FAR')
-        # plt.axis([0, 1, 0, 5000])
-        plt.show()
-        """
 
         if config.SAVE_DUMPS:
             print("Dumping models data")
@@ -143,39 +131,6 @@ class WBBRecogniser:
             dump(self.kneighbors_classifier, config.KNEIGHBORS_CLASSIFIER_DUMP_PATH)
             dump(self.svm_model, config.SVM_MODEL_DUMP_PATH)
 
-    def __all_vs_all(self, templates):
-        labels = self.y_test
-        trainedModel = self.svm_model
-        GA = 0
-        FR = 0
-        GR = 0
-        FA = 0
-        idsList = os.listdir(config.SAMPLES_DIR_PATH)
-        treshold = np.arange(0, 1.005, 0.005)
-        res = []
-        for t in treshold:
-            GA = 0
-            FR = 0
-            GR = 0
-            FA = 0
-            for probe in templates:
-                currentProbeIdx = templates.index(probe)
-                probabilities = trainedModel.predict_proba(np.array(probe).reshape(1, -1))
-                for p in probabilities[0]:
-                    if p <= t:
-                        if currentProbeIdx < len(labels) and np.where(probabilities[0] == p) == idsList.index(
-                                labels[currentProbeIdx]):
-                            GA += 1
-                        else:
-                            FA += 1
-                    else:
-                        if currentProbeIdx < len(labels) and np.where(probabilities[0] == p) == idsList.index(
-                                labels[currentProbeIdx]):
-                            FR += 1
-                        else:
-                            GR += 1
-            res.append([t, GA, FR, GR, FA, GA / 570, FA / 60, FR / 570, GR / 60])
-        return res
 
     def __extract_feature_from_samples(self):
 
@@ -194,7 +149,7 @@ class WBBRecogniser:
                 sample = np.array(
                     np.loadtxt(config.SAMPLES_DIR_PATH + "/" + directory + "/" + filename + "", dtype=float))
 
-                self.normalize_sample_to_timeseries(sample, id=directory, ts=ts)
+                self.normalize_sample_to_timeseries(sample, id=directory, ts=ts, counter=ctr)
 
         print("Samples processing completed!")
 
@@ -205,15 +160,15 @@ class WBBRecogniser:
             convert_file.write(json.dumps(data))
 
     @staticmethod
-    def normalize_sample_to_timeseries(sample, id, ts=None):
+    def normalize_sample_to_timeseries(sample, id, counter, ts=None):
         if ts is None:
             ts = {"id": [], "time": [], "m_x": [], "m_y": []}
 
-        for idx, temp in enumerate(sample):
+        for temp in sample:
             ts["m_x"].append(temp[5])
             ts["m_y"].append(temp[6])
             ts["time"].append(temp[0])
-            ts["id"].append(id)  # + "_" + str(idx) todo controllare che sia corretto
+            ts["id"].append(id+ "_" + str(counter))
 
         return ts
 
@@ -332,8 +287,6 @@ class WBBRecogniser:
         )
 
         scaler = MinMaxScaler()
-
-        # Don't cheat - fit only on training data
         scaler.fit(rel_features)
         rel_features = scaler.transform(rel_features)
 

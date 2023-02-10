@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import squareform, pdist
+from scipy.ndimage.filters import gaussian_filter1d
 
 
 class Evaluation:
@@ -82,7 +83,7 @@ class Evaluation:
 
     def plot_verification_results(self, results):
 
-        fig, (axERR, axDET, axROC) = plt.subplots(ncols=3)
+        fig, (axERR, axROC, axDET) = plt.subplots(ncols=3)
         fig.set_size_inches(10, 5)
         thresholds = []
         fars = []
@@ -92,6 +93,10 @@ class Evaluation:
             thresholds += [t]
             fars += [results[t]['far']]
             frrs += [results[t]['frr']]
+
+
+        #fars = gaussian_filter1d(fars, sigma=2)
+        #frrs = gaussian_filter1d(frrs, sigma=2)
 
         axERR.plot(thresholds, fars, 'r', label='FAR')
         axERR.plot(thresholds, frrs, 'g', label='FRR')
@@ -106,9 +111,9 @@ class Evaluation:
 
         axDET.plot(fars, frrs)
         axDET.set_ylabel('FRR')
+        axDET.set_xlabel('FAR')
         axDET.set_yscale('log')
         axDET.set_xscale('log')
-        axDET.set_xlabel('FAR')
         axDET.title.set_text('DET Curve')
 
         plt.show()
@@ -221,18 +226,23 @@ class Evaluation:
             frrs += [results[t]['frr']]
             dir1 += [results[t]['dir'][0]]
 
+        #fars = gaussian_filter1d(fars, sigma=2)
+        #frrs = gaussian_filter1d(frrs, sigma=2)
+        #dir1 = gaussian_filter1d(dir1, sigma=2)
+        #cms = gaussian_filter1d(cms, sigma=2)
+
+
         # FAR vs FRR
         axERR.plot(thresholds, fars, 'r', label='FAR')
         axERR.plot(thresholds, frrs, 'g', label='FRR')
         axERR.set_xlabel('Threshold')
         axERR.legend(loc='lower right', shadow=True, fontsize='x-large')
         axERR.title.set_text('FAR and FRR')
-
         axDET.plot(fars, frrs)
         axDET.set_ylabel('FRR')
+        axDET.set_xlabel('FAR')
         axDET.set_yscale('log')
         axDET.set_xscale('log')
-        axDET.set_xlabel('FAR')
         axDET.title.set_text('DET Curve')
 
         axROC.plot(fars, list(map(lambda frr: 1 - frr, frrs)))
