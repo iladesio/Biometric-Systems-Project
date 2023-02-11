@@ -2,8 +2,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.ticker import LogFormatterSciNotation
 from scipy.spatial.distance import squareform, pdist
-from scipy.ndimage.filters import gaussian_filter1d
+from shapely.geometry import LineString
 
 
 class Evaluation:
@@ -16,9 +17,8 @@ class Evaluation:
 
         # treshold lists
         self.distance_matrix = self.compute_distance_matrix().to_numpy()
-        max_treshold = self.distance_matrix.max() * 0.66
-        # self.decimal_tresholds = np.arange(0, 1.5, 0.01)
-        self.decimal_tresholds = np.arange(0, max_treshold, max_treshold / 500)
+        max_treshold = self.distance_matrix.max()
+        self.decimal_tresholds = np.arange(0, max_treshold, max_treshold / 10)
 
     def compute_distance_matrix(self):
         return pd.DataFrame(squareform(pdist(np.array(self.features), metric=self.current_metric)))
@@ -84,7 +84,7 @@ class Evaluation:
     def plot_verification_results(self, results):
 
         fig, (axERR, axROC, axDET) = plt.subplots(ncols=3)
-        fig.set_size_inches(10, 5)
+        fig.set_size_inches(15, 5)
         thresholds = []
         fars = []
         frrs = []
@@ -94,14 +94,21 @@ class Evaluation:
             fars += [results[t]['far']]
             frrs += [results[t]['frr']]
 
-
-        #fars = gaussian_filter1d(fars, sigma=2)
-        #frrs = gaussian_filter1d(frrs, sigma=2)
-
         axERR.plot(thresholds, fars, 'r', label='FAR')
         axERR.plot(thresholds, frrs, 'g', label='FRR')
         axERR.legend(loc='center right', shadow=True, fontsize='x-large')
         axERR.set_xlabel('Threshold')
+
+        line_1 = LineString(np.column_stack((thresholds, fars)))
+        line_2 = LineString(np.column_stack((thresholds, frrs)))
+        intersection = line_1.intersection(line_2)
+        x, y = intersection.xy
+        x = float("{:.2f}".format(x[0]))
+        y = float("{:.2f}".format(y[0]))
+
+        axERR.plot(*intersection.xy, 'ro')
+        axERR.annotate("(" + str(x) + "," + str(y) + ")", xy=(x, y), xytext=(x + 0.01, y + 0.01))
+
         axERR.title.set_text('FAR vs FRR')
 
         axROC.plot(fars, list(map(lambda frr: 1 - frr, frrs)))
@@ -116,10 +123,8 @@ class Evaluation:
         axDET.set_xscale('log')
         axDET.title.set_text('DET Curve')
 
-        plt.show()
-
-        # plt.savefig("metrics_plot/" + self.current_metric + "_verification.png")
-        # plt.clf()
+        plt.savefig("metrics/verification.png", dpi=400)
+        plt.clf()
 
     def similar_to(self, probe_idx, distance_matrix=None):
 
@@ -214,7 +219,7 @@ class Evaluation:
     def plot_identification_results(self, results, cms):
 
         fig, (axERR, axROC, axDET, axDIR, axCMS) = plt.subplots(ncols=5)
-        fig.set_size_inches(20, 5)
+        fig.set_size_inches(25, 5)
         thresholds = []
         fars = []
         frrs = []
@@ -226,25 +231,32 @@ class Evaluation:
             frrs += [results[t]['frr']]
             dir1 += [results[t]['dir'][0]]
 
-        #fars = gaussian_filter1d(fars, sigma=2)
-        #frrs = gaussian_filter1d(frrs, sigma=2)
-        #dir1 = gaussian_filter1d(dir1, sigma=2)
-        #cms = gaussian_filter1d(cms, sigma=2)
-
-
         # FAR vs FRR
         axERR.plot(thresholds, fars, 'r', label='FAR')
         axERR.plot(thresholds, frrs, 'g', label='FRR')
         axERR.set_xlabel('Threshold')
         axERR.legend(loc='lower right', shadow=True, fontsize='x-large')
         axERR.title.set_text('FAR and FRR')
+
+        line_1 = LineString(np.column_stack((thresholds, fars)))
+        line_2 = LineString(np.column_stack((thresholds, frrs)))
+        intersection = line_1.intersection(line_2)
+        x, y = intersection.xy
+        x = float("{:.2f}".format(x[0]))
+        y = float("{:.2f}".format(y[0]))
+
+        axERR.plot(*intersection.xy, 'ro')
+        axERR.annotate("(" + str(x) + "," + str(y) + ")", xy=(x, y), xytext=(x + 0.01, y + 0.01))
+
+        # DET
         axDET.plot(fars, frrs)
         axDET.set_ylabel('FRR')
         axDET.set_xlabel('FAR')
-        axDET.set_yscale('log')
         axDET.set_xscale('log')
+        axDET.xaxis.set_major_formatter(LogFormatterSciNotation())
         axDET.title.set_text('DET Curve')
 
+        # ROC
         axROC.plot(fars, list(map(lambda frr: 1 - frr, frrs)))
         axROC.set_ylabel('GAR=1-FRR')
         axROC.set_xlabel('FAR')
@@ -257,15 +269,13 @@ class Evaluation:
         axDIR.title.set_text('DIR(t, 1)')
 
         # CMS
-        axCMS.plot(range(1, len(cms) + 1), cms)
+        axCMS.plot(range(1, len(cms) // 6), cms[1:len(cms) // 6])
         axCMS.set_xlabel('Rank')
         axCMS.set_ylabel('Probability of identification')
         axCMS.title.set_text('CMC')
 
-        plt.show()
-
-        # plt.savefig("metrics_plot/" + self.current_metric + "_identification.png")
-        # plt.clf()
+        plt.savefig("metrics/identification.png", dpi=400)
+        plt.clf()
 
     def eval_verification(self):
 

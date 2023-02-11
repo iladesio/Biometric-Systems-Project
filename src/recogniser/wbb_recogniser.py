@@ -126,14 +126,12 @@ class WBBRecogniser:
         print("Model accuracy for Logistic Regression: ", self.lr_model.score(transformed_x_test, self.y_test))
         print("Model accuracy for SVM: ", self.svm_model.score(transformed_x_test, self.y_test))
 
-
         if config.SAVE_DUMPS:
             print("Dumping models data")
             dump(self.standard_scaler, config.STANDARD_SCALER_DUMP_PATH)
             dump(self.lr_model, config.LR_MODEL_DUMP_PATH)
             dump(self.kneighbors_classifier, config.KNEIGHBORS_CLASSIFIER_DUMP_PATH)
             dump(self.svm_model, config.SVM_MODEL_DUMP_PATH)
-
 
     def __extract_feature_from_samples(self):
 
@@ -171,7 +169,7 @@ class WBBRecogniser:
             ts["m_x"].append(temp[5])
             ts["m_y"].append(temp[6])
             ts["time"].append(temp[0])
-            ts["id"].append(id+ "_" + str(counter))
+            ts["id"].append(id + "_" + str(counter))
 
         return ts
 
