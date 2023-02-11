@@ -13,7 +13,7 @@ class IdentityVerifier:
         self.at = acceptance_threshold
         self.wbb_recognizer = wbb_recognizer
 
-        self.features_name = [] # todo calolcare da wbb rec
+        self.features_name = []  # todo calolcare da wbb rec
 
     def verify(self, pathname, claimed_id="AB_M_65_DX_R") -> bool:
 

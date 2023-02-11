@@ -14,7 +14,6 @@ from tqdm import tqdm
 from tsfresh import extract_features, select_features
 from tsfresh.feature_selection.relevance import calculate_relevance_table
 from tsfresh.utilities.dataframe_functions import impute
-from sklearn.preprocessing import MinMaxScaler
 
 from src.recogniser.evaluation import Evaluation
 from src.utilities import config
@@ -75,7 +74,7 @@ class WBBRecogniser:
 
         # x_train, x_test, y_train, y_test = train_test_split(x_feature, y_label, test_size=0.1, random_state=42)
         # x_train, x_test, y_train, y_test = train_test_split(selected_feature.to_numpy(), y_label, test_size=0.1, random_state=42)
-        x_train, x_test, y_train, y_test = train_test_split(rel_features, y_label, test_size=0.1, random_state=42)
+        x_train, x_test, y_train, y_test = train_test_split(rel_features, y_label, test_size=0.5, random_state=42)
 
         self.x_train = x_train
         self.x_test = x_test
@@ -123,14 +122,12 @@ class WBBRecogniser:
         print("Model accuracy for Logistic Regression: ", self.lr_model.score(transformed_x_test, self.y_test))
         print("Model accuracy for SVM: ", self.svm_model.score(transformed_x_test, self.y_test))
 
-
         if config.SAVE_DUMPS:
             print("Dumping models data")
             dump(self.standard_scaler, config.STANDARD_SCALER_DUMP_PATH)
             dump(self.lr_model, config.LR_MODEL_DUMP_PATH)
             dump(self.kneighbors_classifier, config.KNEIGHBORS_CLASSIFIER_DUMP_PATH)
             dump(self.svm_model, config.SVM_MODEL_DUMP_PATH)
-
 
     def __extract_feature_from_samples(self):
 
@@ -168,7 +165,7 @@ class WBBRecogniser:
             ts["m_x"].append(temp[5])
             ts["m_y"].append(temp[6])
             ts["time"].append(temp[0])
-            ts["id"].append(id+ "_" + str(counter))
+            ts["id"].append(id + "_" + str(counter))
 
         return ts
 
@@ -280,10 +277,11 @@ class WBBRecogniser:
 
     def perform_evaluation(self):
 
+        # compute all-against-all with ALL templates
         rel_features, y_label, features_name = self.__select_feature_extracted(
-            x_feature=self.x_test,
-            y_label=self.y_test,
-            features_name=self.features_name,
+            x_feature=self.data["template"],
+            y_label=self.data["label"],
+            features_name=self.data["features_name"],
         )
 
         scaler = MinMaxScaler()
