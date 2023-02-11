@@ -21,25 +21,24 @@ class Doddigton:
         self.y_label = y_labels
 
         # treshold lists
-        self.decimal_tresholds = np.arange(0, 50, 0.05)
         self.distance_matrix = self.compute_distance_matrix().to_numpy()
 
     def compute_distance_matrix(self, metric='seuclidean'):
         return pd.DataFrame(squareform(pdist(np.array(self.features), metric=metric)))
 
-    def verification(self, distance_matrix=None, thresholds=None):
+    def verification(self, distance_matrix=None):
 
         if distance_matrix is None:
             distance_matrix = self.distance_matrix
-
-        if thresholds is None:
-            thresholds = self.decimal_tresholds
+            
 
         # dictionary that will contain all the results
-        results = {user: dict() for user in set(self.y_label)}
+        results = {user: dict({'fa': 0, 'fr': 0}) for user in set(self.y_label)}
         rows, cols = distance_matrix.shape
 
-        t = 5.7
+        #t = 5.02
+        #t = 10
+        t = 20
 
         for y in range(rows):
             fa, fr, gr, ga = 0, 0, 0, 0
@@ -75,13 +74,31 @@ class Doddigton:
 
             results[row_label] = {'fa': results[row_label]['fa'] + fa, 'fr': results[row_label]['fr'] + fr}
 
-        #if index % (len(thresholds) // 10) == 0:
-        #    print(
-        #        f"gar: {results[t]['gar']}\t "
-        #        f"far: {results[t]['far']}\t "
-        #        f"frr: {results[t]['frr']}\t "
-        #        f"grr: {results[t]['grr']}")
+        return results, rows
 
-        return results
+    def plot_verification_results(self, results, rows):
 
+        fig, (axDDGT) = plt.subplots(ncols=1)
+        fig.set_size_inches(15, 5)
+        fars = []
+        frrs = []
+
+        for t in results:
+            fars += [results[t]['fa']/(rows * 29)]
+            frrs += [results[t]['fr']/rows]
+
+        
+        axDDGT.scatter(fars, frrs, c=np.random.rand(len(fars),3))
+        axDDGT.legend(loc='center right', shadow=True, fontsize='x-large')
+        axDDGT.set_xlabel('FAR')
+        axDDGT.set_ylabel('FRR')
+
+        plt.show()
+
+    def eval_verification(self):
+
+        # verification
+        print("Verification Doddington Zoo:")
+        verification_results, rows = self.verification()
+        self.plot_verification_results(verification_results, rows)
     

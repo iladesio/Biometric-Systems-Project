@@ -17,6 +17,7 @@ from tsfresh.utilities.dataframe_functions import impute
 from sklearn.preprocessing import MinMaxScaler
 
 from src.recogniser.evaluation import Evaluation
+from src.recogniser.doddington_zoo import Doddigton
 from src.utilities import config
 
 
@@ -285,6 +286,11 @@ class WBBRecogniser:
         #            'hamming', 'jaccard', 'jensenshannon', 'matching', 'minkowski',
         #            'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule']
 
+        doddington = Doddigton(features=self.x_test, y_labels=self.y_test)
+
+        # doddington zoo verification
+        doddington.eval_verification()
+
         metrics = ["euclidean"]
 
         for metric in metrics:
@@ -295,3 +301,4 @@ class WBBRecogniser:
 
             # identification
             evaluation.eval_identification()
+
