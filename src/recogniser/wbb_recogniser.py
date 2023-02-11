@@ -190,13 +190,13 @@ class WBBRecogniser:
             impute_function=impute
         )
         
-        ## filter features if required
-        #if features_filter is not None:
-        #    extracted_features = extracted_features[features_filter]
-        #    features_name = features_filter
-        ## set features_name list with the extracted ones
-        #else:
-        features_name = extracted_features.columns.tolist()
+        # filter features if required
+        if features_filter is not None:
+            extracted_features = extracted_features[features_filter]
+            features_name = features_filter
+        # set features_name list with the extracted ones
+        else:
+            features_name = extracted_features.columns.tolist()
 
         # remove index at the end of the label if it is present and setting label list
         for idx, e in enumerate(extracted_features.iterrows()):
