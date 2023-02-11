@@ -6,4 +6,5 @@ joblib
 json
 scikit-learn
 scipy
+shapely
 

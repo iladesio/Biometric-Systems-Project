@@ -14,6 +14,7 @@ from tqdm import tqdm
 from tsfresh import extract_features, select_features
 from tsfresh.feature_selection.relevance import calculate_relevance_table
 from tsfresh.utilities.dataframe_functions import impute
+from sklearn.preprocessing import MinMaxScaler
 
 from src.recogniser.evaluation import Evaluation
 from src.utilities import config
@@ -60,24 +61,27 @@ class WBBRecogniser:
         print("Loading templates data")
         self.__read_datas()
 
+        print("Scaling features")
+        scaler = MinMaxScaler()
+        scaler.fit(self.data["template"])
+        scaled_features = scaler.transform(self.data["template"])
+
+        print("Splitting dataset")
+        x_train, x_test, y_train, y_test = train_test_split(scaled_features, self.data["label"], test_size=0.5, random_state=42)
+
         rel_features, y_label, features_name = self.__select_feature_extracted(
-            x_feature=self.data["template"],
-            y_label=self.data["label"],
+            x_feature=x_train,
+            y_label=y_train,
             features_name=self.data["features_name"],
         )
 
         print("Splitting Dataset")
 
-        # rel_features = rel_features[:-60]
-        # y_label = y_label[:-60]
-        # self.impostors = rel_features[-60:]
+        df_test = pd.DataFrame(index=y_test, data=x_test)
+        df_test.columns = self.data["features_name"]
 
-        # x_train, x_test, y_train, y_test = train_test_split(x_feature, y_label, test_size=0.1, random_state=42)
-        # x_train, x_test, y_train, y_test = train_test_split(selected_feature.to_numpy(), y_label, test_size=0.1, random_state=42)
-        x_train, x_test, y_train, y_test = train_test_split(rel_features, y_label, test_size=0.5, random_state=42)
-
-        self.x_train = x_train
-        self.x_test = x_test
+        self.x_train = rel_features
+        self.x_test = (df_test[features_name]).to_numpy()
         self.y_train = y_train
         self.y_test = y_test
 
@@ -185,7 +189,7 @@ class WBBRecogniser:
             profile=False,
             impute_function=impute
         )
-
+        
         # filter features if required
         if features_filter is not None:
             extracted_features = extracted_features[features_filter]
@@ -232,19 +236,9 @@ class WBBRecogniser:
         relevance_table.sort_values("p_value", inplace=True)
 
         # update current features list
-        self.features_name = relevance_table["feature"]
+        self.features_name = relevance_table["feature"]        
 
-        # filtering on selected features
-        indices = []
-        for e in relevance_table["feature"]:  # riducibile ex ->  for e in relevance_table["feature"][:500]:
-            indices.append(selected_feature.columns.get_loc(e))
-
-        rel_features = []
-        for f in selected_feature.to_numpy():
-            temp = []
-            for idx in indices:
-                temp.append(f[idx])
-            rel_features.append(temp)
+        rel_features = df[relevance_table["feature"]].to_numpy()
 
         print("Feature selection completed!")
 
@@ -277,16 +271,15 @@ class WBBRecogniser:
 
     def perform_evaluation(self):
 
-        # compute all-against-all with ALL templates
-        rel_features, y_label, features_name = self.__select_feature_extracted(
-            x_feature=self.data["template"],
-            y_label=self.data["label"],
-            features_name=self.data["features_name"],
-        )
+        #rel_features, y_label, features_name = self.__select_feature_extracted(
+        #    x_feature=self.x_test,
+        #    y_label=self.y_test,
+        #    features_name=self.features_name,
+        #)
 
-        scaler = MinMaxScaler()
-        scaler.fit(rel_features)
-        rel_features = scaler.transform(rel_features)
+        #scaler = MinMaxScaler()
+        #scaler.fit(rel_features)
+        #rel_features = scaler.transform(rel_features)
 
         # metrics = ['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 'cosine', 'dice', 'euclidean',
         #            'hamming', 'jaccard', 'jensenshannon', 'matching', 'minkowski',
@@ -295,7 +288,7 @@ class WBBRecogniser:
         metrics = ["euclidean"]
 
         for metric in metrics:
-            evaluation = Evaluation(features=rel_features, y_labels=y_label, current_metric=metric)
+            evaluation = Evaluation(features=self.x_test, y_labels=self.y_test, current_metric=metric)
 
             # verification
             evaluation.eval_verification()

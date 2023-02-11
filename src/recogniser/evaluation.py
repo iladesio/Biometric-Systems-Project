@@ -5,6 +5,7 @@ import pandas as pd
 from matplotlib.ticker import LogFormatterSciNotation
 from scipy.spatial.distance import squareform, pdist
 from shapely.geometry import LineString
+from src.utilities import config
 
 
 class Evaluation:
@@ -18,7 +19,7 @@ class Evaluation:
         # treshold lists
         self.distance_matrix = self.compute_distance_matrix().to_numpy()
         max_treshold = self.distance_matrix.max()
-        self.decimal_tresholds = np.arange(0, max_treshold, max_treshold / 10)
+        self.decimal_tresholds = np.arange(0, max_treshold, max_treshold / 1000)
 
     def compute_distance_matrix(self):
         return pd.DataFrame(squareform(pdist(np.array(self.features), metric=self.current_metric)))
@@ -123,7 +124,7 @@ class Evaluation:
         axDET.set_xscale('log')
         axDET.title.set_text('DET Curve')
 
-        plt.savefig("metrics/verification.png", dpi=400)
+        plt.savefig(config.BASE_PLOT_PATH+"verification.png", dpi=400)
         plt.clf()
 
     def similar_to(self, probe_idx, distance_matrix=None):
@@ -274,7 +275,7 @@ class Evaluation:
         axCMS.set_ylabel('Probability of identification')
         axCMS.title.set_text('CMC')
 
-        plt.savefig("metrics/identification.png", dpi=400)
+        plt.savefig(config.BASE_PLOT_PATH+"identification.png", dpi=400)
         plt.clf()
 
     def eval_verification(self):
