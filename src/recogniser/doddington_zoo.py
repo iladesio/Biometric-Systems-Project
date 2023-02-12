@@ -93,12 +93,14 @@ class Doddigton:
 
         
         axDDGT.scatter(far, frr, c=np.random.rand(len(frr),3))
-        #axDDGT.legend(loc='center right', shadow=True, fontsize='x-large')
+
         for i, txt in enumerate(results):
-            axDDGT.annotate(txt, (far[i], frr[i]))
+            axDDGT.annotate(txt.split('_')[0], (far[i]+0.003, frr[i]+0.003))
 
         axDDGT.set_xlabel('FAR')
         axDDGT.set_ylabel('FRR')
+        axDDGT.title.set_text('Doddington Zoo')
+
 
         plt.savefig(config.BASE_PLOT_PATH+"doddington_zoo.png", dpi=400)
         plt.clf()
