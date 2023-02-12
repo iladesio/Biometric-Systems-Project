@@ -33,7 +33,7 @@ class Doddigton:
             
 
         # dictionary that will contain all the results
-        results = {user: dict({'fa': 0, 'fr': 0}) for user in set(self.y_label)}
+        results = {user: dict({'fa': 0, 'fr': 0, 'ga': 0, 'gr': 0}) for user in set(self.y_label)}
         rows, cols = distance_matrix.shape
 
         #t = 5.02
@@ -71,8 +71,9 @@ class Doddigton:
                         fr += 1
                     else:
                         gr += 1
+                break
 
-            results[row_label] = {'fa': results[row_label]['fa'] + fa, 'fr': results[row_label]['fr'] + fr}
+            results[row_label] = {'fa': results[row_label]['fa'] + fa, 'fr': results[row_label]['fr'] + fr, 'ga': results[row_label]['ga'] + ga, 'gr': results[row_label]['gr'] + gr}
 
         return results, rows
 
@@ -82,16 +83,24 @@ class Doddigton:
         fig.set_size_inches(15, 5)
         fars = []
         frrs = []
+        ags = []
+        aip = []
 
         for t in results:
-            fars += [results[t]['fa']/(rows * 29)]
+            fars += [results[t]['fa']/rows]
             frrs += [results[t]['fr']/rows]
+            ags += [(results[t]['ga'] + results[t]['gr'])/rows]
+            aip += [(results[t]['fa'] + results[t]['fr'])/rows]
 
         
-        axDDGT.scatter(fars, frrs, c=np.random.rand(len(fars),3))
-        axDDGT.legend(loc='center right', shadow=True, fontsize='x-large')
-        axDDGT.set_xlabel('FAR')
-        axDDGT.set_ylabel('FRR')
+        #axDDGT.scatter(fars, frrs, c=np.random.rand(len(fars),3))
+        axDDGT.scatter(ags, aip)
+        #axDDGT.legend(loc='center right', shadow=True, fontsize='x-large')
+        for i, txt in enumerate(results):
+            axDDGT.annotate(txt, (ags[i], aip[i]))
+
+        axDDGT.set_xlabel('Average Genuine Score')
+        axDDGT.set_ylabel('Average Imposter Score')
 
         plt.show()
 
