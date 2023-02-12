@@ -7,7 +7,7 @@ TEMPLATES_PATH = "../data/Templates/templates"
 TEST_DEMO_PATH = "demo/DemoSample"
 
 """ models constants """
-SAVE_DUMPS = True
+SAVE_DUMPS = False
 LOAD_DUMPS = True
 
 STANDARD_SCALER_DUMP_PATH = "models/StandardScaler.joblib"
