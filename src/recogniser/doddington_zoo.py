@@ -1,4 +1,5 @@
 # plt
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import squareform, pdist
@@ -31,15 +32,12 @@ class Doddigton:
             
 
         # dictionary that will contain all the results
-        results = {user: dict({'fa': 0, 'fr': 0, 'ga': 0, 'gr': 0}) for user in set(self.y_label)}
+        results = {user: dict({'fa': 0, 'fr': 0, 'ga': 0, 'gr': 0, 'ctr': 0}) for user in set(self.y_label)}
         rows, cols = distance_matrix.shape
 
-        #t = 5.02
-        #t = 10
-        t = 20
+        t = 4.77
 
         for y in range(rows):
-            fa, fr, gr, ga = 0, 0, 0, 0
             row_label = self.y_label[y]
 
             # results are grouped by label (here we're doing verification with multiple templates)
@@ -60,45 +58,44 @@ class Doddigton:
                 if d <= t:
                     # we have an acceptance, genuine or false?
                     if row_label == label:
-                        ga += 1
+                        results[row_label]['ga'] += 1 
                     else:
-                        fa += 1
+                        results[row_label]['fa'] += 1 
                 else:
                     # we have a rejection, genuine or false?
                     if row_label == label:
-                        fr += 1
+                        results[row_label]['fr'] += 1 
                     else:
-                        gr += 1
-                break
+                        results[row_label]['gr'] += 1 
 
-            results[row_label] = {'fa': results[row_label]['fa'] + fa, 'fr': results[row_label]['fr'] + fr, 'ga': results[row_label]['ga'] + ga, 'gr': results[row_label]['gr'] + gr}
+            results[row_label]['ctr'] += 1 
+                
 
-        return results, rows
+        return results
 
-    def plot_verification_results(self, results, rows):
+    def plot_verification_results(self, results):
 
         fig, (axDDGT) = plt.subplots(ncols=1)
         fig.set_size_inches(15, 5)
-        fars = []
-        frrs = []
-        ags = []
-        aip = []
+        grr = []
+        frr = []
+        gar = []
+        far = []
 
         for t in results:
-            fars += [results[t]['fa']/rows]
-            frrs += [results[t]['fr']/rows]
-            ags += [(results[t]['ga'] + results[t]['gr'])/rows]
-            aip += [(results[t]['fa'] + results[t]['fr'])/rows]
+            grr += [results[t]['gr']/(results[t]['ctr']*23)]
+            frr += [results[t]['fr']/results[t]['ctr']]
+            gar += [results[t]['ga']/results[t]['ctr']]
+            far += [results[t]['fa']/(results[t]['ctr']*23)]
 
         
-        #axDDGT.scatter(fars, frrs, c=np.random.rand(len(fars),3))
-        axDDGT.scatter(ags, aip)
+        axDDGT.scatter(far, frr, c=np.random.rand(len(frr),3))
         #axDDGT.legend(loc='center right', shadow=True, fontsize='x-large')
         for i, txt in enumerate(results):
-            axDDGT.annotate(txt, (ags[i], aip[i]))
+            axDDGT.annotate(txt, (far[i], frr[i]))
 
-        axDDGT.set_xlabel('Average Genuine Score')
-        axDDGT.set_ylabel('Average Imposter Score')
+        axDDGT.set_xlabel('FAR')
+        axDDGT.set_ylabel('FRR')
 
         plt.show()
 
@@ -106,6 +103,6 @@ class Doddigton:
 
         # verification
         print("Verification Doddington Zoo:")
-        verification_results, rows = self.verification()
-        self.plot_verification_results(verification_results, rows)
+        verification_results = self.verification()
+        self.plot_verification_results(verification_results)
     

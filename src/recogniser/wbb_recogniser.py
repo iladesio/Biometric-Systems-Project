@@ -70,7 +70,7 @@ class WBBRecogniser:
 
         print("Splitting dataset")
         x_train, x_test, y_train, y_test = train_test_split(scaled_features, self.data["label"], test_size=0.5,
-                                                            random_state=42)
+                                                            random_state=42, stratify=self.data["label"])
 
         rel_features, y_label, features_name = self.__select_feature_extracted_train(
             x_feature=x_train,
