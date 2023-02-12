@@ -17,6 +17,7 @@ from tsfresh.feature_selection.relevance import calculate_relevance_table
 from tsfresh.utilities.dataframe_functions import impute
 
 from src.recogniser.evaluation import Evaluation
+from src.recogniser.doddington_zoo import Doddigton
 from src.utilities import config
 
 
@@ -251,6 +252,11 @@ class WBBRecogniser:
 
     def perform_evaluation(self):
 
+        doddington = Doddigton(features=self.x_test, y_labels=self.y_test)
+
+        # doddington zoo verification
+        doddington.eval_verification()
+
         evaluation = Evaluation(x_features=self.x_test, y_labels=self.y_test, current_metric="euclidean")
 
         # verification
@@ -258,3 +264,4 @@ class WBBRecogniser:
 
         # identification
         evaluation.eval_identification()
+
