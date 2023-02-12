@@ -244,11 +244,11 @@ class WBBRecogniser:
         relevance_table = relevance_table[relevance_table.relevant]
         relevance_table.sort_values("p_value", inplace=True)
 
-        rel_features = df[relevance_table["feature"]].to_numpy()
+        rel_features = df[relevance_table["feature"][:100]].to_numpy()
 
         print("Feature selection completed!")
 
-        return rel_features, y_label, relevance_table["feature"]
+        return rel_features, y_label, relevance_table["feature"][:100]
 
     def perform_evaluation(self):
 
