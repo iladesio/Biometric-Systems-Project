@@ -4,6 +4,9 @@ import numpy as np
 import pandas as pd
 from scipy.spatial.distance import squareform, pdist
 
+from src.utilities import config
+
+
 
 class Doddigton:
 
@@ -35,7 +38,7 @@ class Doddigton:
         results = {user: dict({'fa': 0, 'fr': 0, 'ga': 0, 'gr': 0, 'ctr': 0}) for user in set(self.y_label)}
         rows, cols = distance_matrix.shape
 
-        t = 4.77
+        t = 4.66
 
         for y in range(rows):
             row_label = self.y_label[y]
@@ -97,7 +100,8 @@ class Doddigton:
         axDDGT.set_xlabel('FAR')
         axDDGT.set_ylabel('FRR')
 
-        plt.show()
+        plt.savefig(config.BASE_PLOT_PATH+"doddington_zoo.png", dpi=400)
+        plt.clf()
 
     def eval_verification(self):
 

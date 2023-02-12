@@ -108,7 +108,7 @@ if __name__ == '__main__':
 
     if x == "v":
         identity_verifier = IdentityVerifier(wbb_recognizer)
-        claimed_identity = "CHIARA_F_23_DX_S"
+        claimed_identity = "S6_F_23_DX_S"
 
         if identity_verifier.verify(config.TEST_DEMO_PATH, claimed_identity):
             print(f"Identity verified, you are user {claimed_identity}")
