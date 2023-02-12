@@ -5,14 +5,15 @@ import pandas as pd
 from matplotlib.ticker import LogFormatterSciNotation
 from scipy.spatial.distance import squareform, pdist
 from shapely.geometry import LineString
+
 from src.utilities import config
 
 
 class Evaluation:
 
-    def __init__(self, features, y_labels, current_metric="correlation"):
+    def __init__(self, x_features, y_labels, current_metric="correlation"):
 
-        self.features = features
+        self.x_features = x_features
         self.y_label = y_labels
         self.current_metric = current_metric
 
@@ -22,7 +23,7 @@ class Evaluation:
         self.decimal_tresholds = np.arange(0, max_treshold, max_treshold / 1000)
 
     def compute_distance_matrix(self):
-        return pd.DataFrame(squareform(pdist(np.array(self.features), metric=self.current_metric)))
+        return pd.DataFrame(squareform(pdist(np.array(self.x_features), metric=self.current_metric)))
 
     def verification(self, distance_matrix=None, thresholds=None):
 

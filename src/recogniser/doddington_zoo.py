@@ -1,9 +1,7 @@
 # plt
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import squareform, pdist
-from scipy.ndimage.filters import gaussian_filter1d
 
 
 class Doddigton:
@@ -23,7 +21,7 @@ class Doddigton:
         # treshold lists
         self.distance_matrix = self.compute_distance_matrix().to_numpy()
 
-    def compute_distance_matrix(self, metric='seuclidean'):
+    def compute_distance_matrix(self, metric='euclidean'):
         return pd.DataFrame(squareform(pdist(np.array(self.features), metric=metric)))
 
     def verification(self, distance_matrix=None):
