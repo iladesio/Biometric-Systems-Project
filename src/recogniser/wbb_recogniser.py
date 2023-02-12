@@ -12,9 +12,9 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from tsfresh import extract_features, select_features
+from tsfresh.feature_extraction import ComprehensiveFCParameters
 from tsfresh.feature_selection.relevance import calculate_relevance_table
 from tsfresh.utilities.dataframe_functions import impute
-from sklearn.preprocessing import MinMaxScaler
 
 from src.recogniser.evaluation import Evaluation
 from src.utilities import config
@@ -35,14 +35,15 @@ class WBBRecogniser:
         self.y_train = None
         self.y_test = None
 
-        self.impostors = None
-
         # models
         self.standard_scaler = None
         self.lr_model = None
         self.kneighbors_classifier = None
         self.svm_model = None
 
+        self.scaler = None
+
+        # todo rivedere logica
         self.extracted_features = None
 
         """ init """
@@ -53,7 +54,6 @@ class WBBRecogniser:
     def __read_datas(self):
         with open(config.TEMPLATES_PATH) as json_file:
             self.data = json.load(json_file)
-            self.features_name = self.data["features_name"]
 
     # Split dataset in train and test set
     def __split_train_test(self):
@@ -65,27 +65,33 @@ class WBBRecogniser:
         scaler = MinMaxScaler()
         scaler.fit(self.data["template"])
         scaled_features = scaler.transform(self.data["template"])
+        self.scaler = scaler
 
         print("Splitting dataset")
-        x_train, x_test, y_train, y_test = train_test_split(scaled_features, self.data["label"], test_size=0.5, random_state=42)
+        x_train, x_test, y_train, y_test = train_test_split(scaled_features, self.data["label"], test_size=0.5,
+                                                            random_state=42)
 
-        rel_features, y_label, features_name = self.__select_feature_extracted(
+        rel_features, y_label, features_name = self.__select_feature_extracted_train(
             x_feature=x_train,
             y_label=y_train,
             features_name=self.data["features_name"],
         )
+
+        # update features list starting from train dataset
+        self.features_name = features_name
 
         print("Splitting Dataset")
 
         df_test = pd.DataFrame(index=y_test, data=x_test)
         df_test.columns = self.data["features_name"]
 
+        # filter test features with the trained ones
+        df_test = df_test[self.features_name]
+
         self.x_train = rel_features
-        self.x_test = (df_test[features_name]).to_numpy()
+        self.x_test = df_test.to_numpy()
         self.y_train = y_train
         self.y_test = y_test
-
-        self.features_name = features_name.tolist()
 
     def __setup_models(self):
 
@@ -173,11 +179,15 @@ class WBBRecogniser:
 
         return ts
 
-    @staticmethod
-    def extract_features_from_timeseries(timeseries, features_filter=None):
+    def extract_features_from_timeseries(self, timeseries):
         print("Feature extraction in progress...")
 
         data = {"label": [], "template": [], "features_name": []}
+
+        settings = ComprehensiveFCParameters()
+
+        if "matrix_profile" in settings.keys():
+            del settings["matrix_profile"]
 
         extracted_features = extract_features(
             pd.DataFrame(timeseries),
@@ -187,16 +197,11 @@ class WBBRecogniser:
             show_warnings=False,
             disable_progressbar=False,
             profile=False,
-            impute_function=impute
+            impute_function=impute,
+            default_fc_parameters=settings
         )
-        
-        # filter features if required
-        if features_filter is not None:
-            extracted_features = extracted_features[features_filter]
-            features_name = features_filter
-        # set features_name list with the extracted ones
-        else:
-            features_name = extracted_features.columns.tolist()
+
+        features_name = extracted_features.columns.tolist()
 
         # remove index at the end of the label if it is present and setting label list
         for idx, e in enumerate(extracted_features.iterrows()):
@@ -213,30 +218,30 @@ class WBBRecogniser:
 
             data["template"].append(ext_feat_list)
 
-        # save just one feature name list
+        # save current features name list
         data["features_name"] = features_name
 
         print("Feature extraction completed!")
         return data
 
-    def __select_feature_extracted(self, x_feature, y_label, features_name):
+    def __select_feature_extracted_train(self, x_feature, y_label, features_name):
 
         df = pd.DataFrame(index=y_label, data=x_feature)
         df.columns = features_name
 
         print("Feature selection in progress...")
+
         # selected_feature evaluates the importance of the different extracted features
         selected_feature = select_features(df, pd.Series(data=y_label, index=y_label))
 
-        if self.extracted_features is None:
-            self.extracted_features = selected_feature
+        # save extracted features from train dataset
+        self.extracted_features = selected_feature
 
+        # sort features based on p_values
+        # relevance_table is the feature list
         relevance_table = calculate_relevance_table(selected_feature, pd.Series(data=y_label, index=y_label))
         relevance_table = relevance_table[relevance_table.relevant]
         relevance_table.sort_values("p_value", inplace=True)
-
-        # update current features list
-        self.features_name = relevance_table["feature"]        
 
         rel_features = df[relevance_table["feature"]].to_numpy()
 
@@ -244,54 +249,12 @@ class WBBRecogniser:
 
         return rel_features, y_label, relevance_table["feature"]
 
-    def test_sample(self, pathname, directory="/"):
-
-        sample = np.array(np.loadtxt(pathname, dtype=float))
-
-        ts = self.normalize_sample_to_timeseries(sample, id=directory)
-        data = self.extract_features_from_timeseries(pd.DataFrame(ts), self.features_name)
-
-        scaled_templates = self.standard_scaler.transform(data["template"])
-
-        print()
-        print("lrModel: ", self.lr_model.predict(scaled_templates))
-        print("neigh: ", self.kneighbors_classifier.predict(scaled_templates))
-        print("svm: ", self.svm_model.predict(scaled_templates))
-
-    def run_test(self, pathname):
-        self.test_sample(pathname, directory="Test")
-
-    def run_all_test(self):
-
-        file_list = os.listdir(config.TEST_DIR_PATH + "/")
-        probabilities = []
-
-        for ctr, filename in enumerate(file_list):
-            probabilities.append(self.test_sample("../data/Test/" + filename, directory="Test"))
-
     def perform_evaluation(self):
 
-        #rel_features, y_label, features_name = self.__select_feature_extracted(
-        #    x_feature=self.x_test,
-        #    y_label=self.y_test,
-        #    features_name=self.features_name,
-        #)
+        evaluation = Evaluation(x_features=self.x_test, y_labels=self.y_test, current_metric="euclidean")
 
-        #scaler = MinMaxScaler()
-        #scaler.fit(rel_features)
-        #rel_features = scaler.transform(rel_features)
+        # verification
+        evaluation.eval_verification()
 
-        # metrics = ['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 'cosine', 'dice', 'euclidean',
-        #            'hamming', 'jaccard', 'jensenshannon', 'matching', 'minkowski',
-        #            'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule']
-
-        metrics = ["euclidean"]
-
-        for metric in metrics:
-            evaluation = Evaluation(features=self.x_test, y_labels=self.y_test, current_metric=metric)
-
-            # verification
-            evaluation.eval_verification()
-
-            # identification
-            evaluation.eval_identification()
+        # identification
+        evaluation.eval_identification()
