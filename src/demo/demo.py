@@ -33,8 +33,8 @@ class IdentityVerifier:
 
         """ Compute distances between probe's template and claim's templates """
 
-        gallery_template = self.wbb_recognizer.extracted_features[
-            self.wbb_recognizer.extracted_features.index == claimed_id]
+        gallery_template = self.wbb_recognizer.gallery[
+            self.wbb_recognizer.gallery.index == claimed_id]
 
         # filter gallery_template with the current features list
         gallery_template = gallery_template[self.wbb_recognizer.features_name]
@@ -54,11 +54,11 @@ class IdentityVerifier:
 
 
 class SubjectIdentifier:
-    def __init__(self, wbb_recognizer: WBBRecogniser, acceptance_threshold: float = 1.31):
+    def __init__(self, wbb_recognizer: WBBRecogniser, acceptance_threshold: float = 1.6):
         self.at = acceptance_threshold
         self.wbb_recognizer = wbb_recognizer
 
-    def identify(self, pathname, maxRank: int = 1):
+    def identify(self, pathname, max_rank=1):
         # Read sample data from file
         sample = np.array(np.loadtxt(pathname, dtype=float))
 
@@ -77,10 +77,7 @@ class SubjectIdentifier:
 
         """ Compute distances between probe's template and all the other templates """
 
-        gallery_template = self.wbb_recognizer.extracted_features
-
-        # filter gallery_template with the current features list
-        gallery_template = gallery_template[self.wbb_recognizer.features_name]
+        gallery_template = self.wbb_recognizer.x_test
 
         # no user found with that claimed id
         if len(df) == 0:
@@ -88,16 +85,16 @@ class SubjectIdentifier:
 
         # Compute distance with every template associated to that claimed id
         distances = []
-        for idx, row in enumerate(gallery_template.to_numpy()):
+        for idx, row in enumerate(gallery_template):
             row_features = row.reshape(1, -1)
             stacked = np.vstack((row_features, filtered_features_sample.reshape(1, -1)))
-            curr_label = self.wbb_recognizer.extracted_features.index[idx]
+            curr_label = self.wbb_recognizer.y_test[idx]
             distances += [(pdist(stacked, metric='euclidean')[0], curr_label)]
 
         distances.sort(key=lambda el: el[0])
-        if type(self.at) == type(float()):
+        if isinstance(self.at, float):
             distances = list(filter(lambda x: x[0] < self.at, distances))
-        return distances[:maxRank]
+        return distances[:max_rank]
 
 
 if __name__ == '__main__':
@@ -109,7 +106,6 @@ if __name__ == '__main__':
         print("Do you want [I] identify or [V] verify?")
         user_selection = input()
 
-        # if user pressed Enter without a value, break out of loop
         if user_selection in ["i", "I", "v", "V"]:
             break
         else:

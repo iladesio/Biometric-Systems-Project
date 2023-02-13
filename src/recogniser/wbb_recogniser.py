@@ -27,8 +27,9 @@ class WBBRecogniser:
         self.y_train = None
         self.y_test = None
 
+        self.gallery = None
+
         self.scaler = None
-        self.extracted_features = None
 
         """ init """
         if config.EXTRACT_FEATURE_FROM_SAMPLES:
@@ -56,7 +57,7 @@ class WBBRecogniser:
         x_train, x_test, y_train, y_test = train_test_split(scaled_features, self.data["label"], test_size=0.5,
                                                             random_state=42, stratify=self.data["label"])
 
-        rel_features, y_label, features_name = self.__select_feature_extracted_train(
+        features_name = self.__select_feature_extracted_train(
             x_feature=x_train,
             y_label=y_train,
             features_name=self.data["features_name"],
@@ -73,10 +74,10 @@ class WBBRecogniser:
         # filter test features with the trained ones
         df_test = df_test[self.features_name]
 
-        self.x_train = rel_features
         self.x_test = df_test.to_numpy()
-        self.y_train = y_train
         self.y_test = y_test
+
+        self.gallery = df_test
 
     def __extract_feature_from_samples(self):
 
@@ -174,9 +175,6 @@ class WBBRecogniser:
         # selected_feature evaluates the importance of the different extracted features
         selected_feature = select_features(df, pd.Series(data=y_label, index=y_label))
 
-        # save extracted features from train dataset
-        self.extracted_features = selected_feature
-
         # sort features based on p_values
         # relevance_table is the feature list
         relevance_table = calculate_relevance_table(selected_feature, pd.Series(data=y_label, index=y_label))
@@ -184,11 +182,11 @@ class WBBRecogniser:
         relevance_table.sort_values("p_value", inplace=True)
 
         # filter the first N_RELEVANT_FEATURES ordered by p_value
-        rel_features = df[relevance_table["feature"][:config.N_RELEVANT_FEATURES]].to_numpy()
+        rel_features_name = relevance_table["feature"][:config.N_RELEVANT_FEATURES]
 
         print("Feature selection completed!")
 
-        return rel_features, y_label, relevance_table["feature"][:config.N_RELEVANT_FEATURES]
+        return rel_features_name
 
     def perform_evaluation(self):
 

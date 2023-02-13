@@ -4,26 +4,7 @@ EXTRACT_FEATURE_FROM_SAMPLES = False
 TEST_DIR_PATH = "../data/Test"
 SAMPLES_DIR_PATH = "../data/Samples"
 TEMPLATES_PATH = "../data/Templates/templates"
-TEST_DEMO_PATH = "demo/DemoSample"
-
+TEST_DEMO_PATH = "../data/Test/Walk_Ex_S21"
 
 BASE_PLOT_PATH = "metrics/"
 N_RELEVANT_FEATURES = 200
-
-
-#EXTRACT_FEATURE_FROM_SAMPLES = False
-
-#""" files path """
-#SAMPLES_DIR_PATH = "data/Samples"
-#TEMPLATES_PATH = "data/Templates/templates"
-
-#""" models constants """
-#SAVE_DUMPS = False
-#LOAD_DUMPS = True
-
-#STANDARD_SCALER_DUMP_PATH = "src/models/StandardScaler.joblib"
-#LR_MODEL_DUMP_PATH = "src/models/lrModel.joblib"
-#KNEIGHBORS_CLASSIFIER_DUMP_PATH = "src/models/KNN.joblib"
-#SVM_MODEL_DUMP_PATH = "src/models/svmModel.joblib"
-#BASE_PLOT_PATH = "src/metrics/"
-#N_RELEVANT_FEATURES = 200

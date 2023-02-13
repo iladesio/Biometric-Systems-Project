@@ -17,13 +17,10 @@ class Doddigton:
         self.features = features
         self.y_label = y_labels
 
-    def __init__(self, features, y_labels):
-
-        self.features = features
-        self.y_label = y_labels
-
         # treshold lists
         self.distance_matrix = self.compute_distance_matrix().to_numpy()
+        # threshold chosen after evaluation
+        self.selected_threshold = 1.6
 
     def compute_distance_matrix(self, metric='euclidean'):
         return pd.DataFrame(squareform(pdist(np.array(self.features), metric=metric)))
@@ -37,8 +34,6 @@ class Doddigton:
         results = {user: dict({'fa': 0, 'fr': 0, 'ga': 0, 'gr': 0, 'ctr': 0, 'ctrImpostor': 0}) for user in
                    set(self.y_label)}
         rows, cols = distance_matrix.shape
-
-        t = 1.6
 
         for y in range(rows):
             row_label = self.y_label[y]
@@ -58,7 +53,7 @@ class Doddigton:
             for label in grouped_results:
                 # take minimum distance between templates
                 d = min(grouped_results[label])
-                if d <= t:
+                if d <= self.selected_threshold:
                     # we have an acceptance, genuine or false?
                     if row_label == label:
                         results[row_label]['ga'] += 1
@@ -76,7 +71,8 @@ class Doddigton:
 
         return results
 
-    def plot_verification_results(self, results):
+    @staticmethod
+    def plot_verification_results(results):
 
         fig, (axDDGT) = plt.subplots(ncols=1)
         fig.set_size_inches(15, 5)

@@ -1,4 +1,3 @@
-# plt
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -85,7 +84,8 @@ class Evaluation:
 
         return results
 
-    def plot_verification_results(self, results):
+    @staticmethod
+    def plot_verification_results(results):
 
         fig, axERR = plt.subplots(nrows=1, ncols=1, figsize=(8.5, 6.5))
 
@@ -231,7 +231,8 @@ class Evaluation:
             cms[k] = cms[k] / rows + cms[k - 1]
         return cms
 
-    def plot_identification_results(self, results, cms):
+    @staticmethod
+    def plot_identification_results(results, cms):
 
         thresholds = []
         fars = []
