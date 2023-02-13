@@ -1,1 +1,1 @@
-# Wii Balance Board Biometric Systems
+# Gait Recognition with Wii Balance Board
