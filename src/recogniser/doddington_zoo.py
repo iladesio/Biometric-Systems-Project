@@ -37,11 +37,10 @@ class Doddigton:
             
 
         # dictionary that will contain all the results
-        results = {user: dict({'fa': 0, 'fr': 0, 'ga': 0, 'gr': 0, 'ctr': 0}) for user in set(self.y_label)}
+        results = {user: dict({'fa': 0, 'fr': 0, 'ga': 0, 'gr': 0, 'ctr': 0, 'ctrImpostor': 0}) for user in set(self.y_label)}
         rows, cols = distance_matrix.shape
 
-        #t = 4.66
-        t = 0.94
+        t = 1.6
 
         for y in range(rows):
             row_label = self.y_label[y]
@@ -74,6 +73,7 @@ class Doddigton:
                     else:
                         results[row_label]['gr'] += 1 
 
+            results[row_label]['ctrImpostor'] = len(grouped_results)-1
             results[row_label]['ctr'] += 1 
                 
 
@@ -89,10 +89,10 @@ class Doddigton:
         far = []
 
         for t in results:
-            grr += [results[t]['gr']/(results[t]['ctr']*23)]
+            grr += [results[t]['gr']/(results[t]['ctr']*results[t]['ctrImpostor'])]
             frr += [results[t]['fr']/results[t]['ctr']]
             gar += [results[t]['ga']/results[t]['ctr']]
-            far += [results[t]['fa']/(results[t]['ctr']*23)]
+            far += [results[t]['fa']/(results[t]['ctr']*results[t]['ctrImpostor'])]
 
         
         axDDGT.scatter(far, frr, c=np.random.rand(len(frr),3))
