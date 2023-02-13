@@ -9,7 +9,7 @@ from src.utilities import config
 
 
 class IdentityVerifier:
-    def __init__(self, wbb_recognizer: WBBRecogniser, acceptance_threshold: float = 4.94):
+    def __init__(self, wbb_recognizer: WBBRecogniser, acceptance_threshold: float = 1.6):
         self.at = acceptance_threshold
         self.wbb_recognizer = wbb_recognizer
 
@@ -54,7 +54,7 @@ class IdentityVerifier:
 
 
 class SubjectIdentifier:
-    def __init__(self, wbb_recognizer: WBBRecogniser, acceptance_threshold: float = 4.94):
+    def __init__(self, wbb_recognizer: WBBRecogniser, acceptance_threshold: float = 1.31):
         self.at = acceptance_threshold
         self.wbb_recognizer = wbb_recognizer
 
@@ -102,13 +102,37 @@ class SubjectIdentifier:
 
 if __name__ == '__main__':
 
-    wbb_recognizer = WBBRecogniser()
+    user_selection = ""
 
-    x = "i"
+    while user_selection not in ["i", "I", "v", "V"]:
 
-    if x == "v":
+        print("Do you want [I] identify or [V] verify?")
+        user_selection = input()
+
+        # if user pressed Enter without a value, break out of loop
+        if user_selection in ["i", "I", "v", "V"]:
+            break
+        else:
+            print("Invalid error. Retry\n")
+
+    if user_selection in ["V", "v"]:
+        claimed_identity = ""
+        confirmed_id = False
+        while not confirmed_id:
+
+            print("Please insert claimed id: ")
+            claimed_identity = input()
+
+            print("Entered value: " + str(claimed_identity))
+            print("Do you want to confirm? [Y]")
+            confirm = str(input())
+
+            if confirm in ["Y", "y"]:
+                confirmed_id = True
+                break
+
+        wbb_recognizer = WBBRecogniser()
         identity_verifier = IdentityVerifier(wbb_recognizer)
-        claimed_identity = "S6_F_23_DX_S"
 
         if identity_verifier.verify(config.TEST_DEMO_PATH, claimed_identity):
             print(f"Identity verified, you are user {claimed_identity}")
@@ -116,6 +140,7 @@ if __name__ == '__main__':
             print("Access denied.")
 
     else:
+        wbb_recognizer = WBBRecogniser()
         subjectIdentifier = SubjectIdentifier(wbb_recognizer)
 
         users = subjectIdentifier.identify(config.TEST_DEMO_PATH)

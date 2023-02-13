@@ -16,8 +16,8 @@ from tsfresh.feature_extraction import ComprehensiveFCParameters
 from tsfresh.feature_selection.relevance import calculate_relevance_table
 from tsfresh.utilities.dataframe_functions import impute
 
-from src.recogniser.evaluation import Evaluation
 from src.recogniser.doddington_zoo import Doddigton
+from src.recogniser.evaluation import Evaluation
 from src.utilities import config
 
 
@@ -37,10 +37,10 @@ class WBBRecogniser:
         self.y_test = None
 
         # models
-        self.standard_scaler = None
-        self.lr_model = None
-        self.kneighbors_classifier = None
-        self.svm_model = None
+        # self.standard_scaler = None
+        # self.lr_model = None
+        # self.kneighbors_classifier = None
+        # self.svm_model = None
 
         self.scaler = None
 
@@ -50,7 +50,8 @@ class WBBRecogniser:
         """ init """
         if config.EXTRACT_FEATURE_FROM_SAMPLES:
             self.__extract_feature_from_samples()
-        self.__setup_models()
+        # self.__setup_models()
+        self.__split_train_test()
 
     def __read_datas(self):
         with open(config.TEMPLATES_PATH) as json_file:
@@ -180,7 +181,8 @@ class WBBRecogniser:
 
         return ts
 
-    def extract_features_from_timeseries(self, timeseries):
+    @staticmethod
+    def extract_features_from_timeseries(timeseries):
         print("Feature extraction in progress...")
 
         data = {"label": [], "template": [], "features_name": []}
@@ -244,11 +246,11 @@ class WBBRecogniser:
         relevance_table = relevance_table[relevance_table.relevant]
         relevance_table.sort_values("p_value", inplace=True)
 
-        rel_features = df[relevance_table["feature"]].to_numpy()
+        rel_features = df[relevance_table["feature"][:200]].to_numpy()
 
         print("Feature selection completed!")
 
-        return rel_features, y_label, relevance_table["feature"]
+        return rel_features, y_label, relevance_table["feature"][:200]
 
     def perform_evaluation(self):
 
@@ -264,4 +266,3 @@ class WBBRecogniser:
 
         # identification
         evaluation.eval_identification()
-
