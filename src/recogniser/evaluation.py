@@ -302,13 +302,13 @@ class Evaluation:
         axTRS.plot(thresholds, dir1, label='DIR')
         axTRS.set_xlabel('Threshold', fontsize=LABEL_SIZE)
         axTRS.set_title('FAR and DIR', size=TITLE_SIZE)
-        axTRS.axvline(x=1.31, color="orange", linestyle='--')
+        axTRS.axvline(x=1.6, color="orange", linestyle='--')
         axTRS.legend(loc='lower right', shadow=True, fontsize='x-large')
 
         trsh = np.linspace(0, max(thresholds), 1001)
         line_1 = LineString(np.column_stack((trsh, fars)))
         line_2 = LineString(np.column_stack((trsh, dir1)))
-        line_t = LineString([(1.31, 0), (1.31, 1.0)])
+        line_t = LineString([(1.6, 0), (1.6, 1.0)])
 
         intersection_1 = line_1.intersection(line_t)
         intersection_2 = line_2.intersection(line_t)
