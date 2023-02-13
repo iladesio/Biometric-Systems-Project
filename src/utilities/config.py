@@ -15,6 +15,8 @@ LR_MODEL_DUMP_PATH = "models/lrModel.joblib"
 KNEIGHBORS_CLASSIFIER_DUMP_PATH = "models/KNN.joblib"
 SVM_MODEL_DUMP_PATH = "models/svmModel.joblib"
 BASE_PLOT_PATH = "metrics/"
+N_RELEVANT_FEATURES = 200
+
 
 #EXTRACT_FEATURE_FROM_SAMPLES = False
 
@@ -30,5 +32,5 @@ BASE_PLOT_PATH = "metrics/"
 #LR_MODEL_DUMP_PATH = "src/models/lrModel.joblib"
 #KNEIGHBORS_CLASSIFIER_DUMP_PATH = "src/models/KNN.joblib"
 #SVM_MODEL_DUMP_PATH = "src/models/svmModel.joblib"
-
 #BASE_PLOT_PATH = "src/metrics/"
+#N_RELEVANT_FEATURES = 200

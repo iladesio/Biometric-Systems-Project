@@ -246,11 +246,12 @@ class WBBRecogniser:
         relevance_table = relevance_table[relevance_table.relevant]
         relevance_table.sort_values("p_value", inplace=True)
 
-        rel_features = df[relevance_table["feature"][:200]].to_numpy()
+        # filter the first N_RELEVANT_FEATURES ordered by p_value
+        rel_features = df[relevance_table["feature"][:config.N_RELEVANT_FEATURES]].to_numpy()
 
         print("Feature selection completed!")
 
-        return rel_features, y_label, relevance_table["feature"][:200]
+        return rel_features, y_label, relevance_table["feature"][:config.N_RELEVANT_FEATURES]
 
     def perform_evaluation(self):
 
