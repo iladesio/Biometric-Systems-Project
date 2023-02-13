@@ -3,14 +3,8 @@ import os
 
 import numpy as np
 import pandas as pd
-from joblib import dump, load
-from sklearn import svm
-from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import StandardScaler
-from tqdm import tqdm
 from tsfresh import extract_features, select_features
 from tsfresh.feature_extraction import ComprehensiveFCParameters
 from tsfresh.feature_selection.relevance import calculate_relevance_table
@@ -22,10 +16,7 @@ from src.utilities import config
 
 
 class WBBRecogniser:
-    def __init__(self,
-                 load_model_from_file=config.LOAD_DUMPS):
-
-        self.load_model_from_file = load_model_from_file
+    def __init__(self):
 
         # templates data
         self.data = {}
@@ -36,21 +27,13 @@ class WBBRecogniser:
         self.y_train = None
         self.y_test = None
 
-        # models
-        # self.standard_scaler = None
-        # self.lr_model = None
-        # self.kneighbors_classifier = None
-        # self.svm_model = None
-
         self.scaler = None
-
-        # todo rivedere logica
         self.extracted_features = None
 
         """ init """
         if config.EXTRACT_FEATURE_FROM_SAMPLES:
             self.__extract_feature_from_samples()
-        # self.__setup_models()
+
         self.__split_train_test()
 
     def __read_datas(self):
@@ -94,52 +77,6 @@ class WBBRecogniser:
         self.x_test = df_test.to_numpy()
         self.y_train = y_train
         self.y_test = y_test
-
-    def __setup_models(self):
-
-        # setup train and test datas
-        self.__split_train_test()
-
-        if self.load_model_from_file:
-            print("Loading models data")
-            self.standard_scaler = load(config.STANDARD_SCALER_DUMP_PATH)
-            self.lr_model = load(config.LR_MODEL_DUMP_PATH)
-            self.kneighbors_classifier = load(config.KNEIGHBORS_CLASSIFIER_DUMP_PATH)
-            self.svm_model = load(config.SVM_MODEL_DUMP_PATH)
-
-        else:
-            print("Initializing models")
-            self.standard_scaler = StandardScaler()
-            self.lr_model = LogisticRegression(max_iter=10000)
-            self.svm_model = svm.SVC(probability=True)
-
-        print("Models training in progress...")
-
-        # Don't cheat - fit only on training data
-        self.standard_scaler.fit(self.x_train)
-
-        # apply same transformation
-        transformed_x_train = self.standard_scaler.transform(self.x_train)
-        transformed_x_test = self.standard_scaler.transform(self.x_test)
-
-        self.lr_model.fit(transformed_x_train, self.y_train)
-        self.svm_model.fit(transformed_x_train, self.y_train)
-
-        k_range = range(1, 8)
-
-        for k in tqdm(k_range):
-            self.kneighbors_classifier = KNeighborsClassifier(n_neighbors=k)  # todo capire perché
-            self.kneighbors_classifier.fit(transformed_x_train, self.y_train)
-
-        print("Model accuracy for Logistic Regression: ", self.lr_model.score(transformed_x_test, self.y_test))
-        print("Model accuracy for SVM: ", self.svm_model.score(transformed_x_test, self.y_test))
-
-        if config.SAVE_DUMPS:
-            print("Dumping models data")
-            dump(self.standard_scaler, config.STANDARD_SCALER_DUMP_PATH)
-            dump(self.lr_model, config.LR_MODEL_DUMP_PATH)
-            dump(self.kneighbors_classifier, config.KNEIGHBORS_CLASSIFIER_DUMP_PATH)
-            dump(self.svm_model, config.SVM_MODEL_DUMP_PATH)
 
     def __extract_feature_from_samples(self):
 

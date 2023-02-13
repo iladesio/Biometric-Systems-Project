@@ -2,18 +2,18 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.ticker import LogFormatterSciNotation
 from scipy.spatial.distance import squareform, pdist
 from shapely.geometry import LineString
 
 from src.utilities import config
 
-LABEL_SIZE = 20
+TITLE_SIZE = 20
+LABEL_SIZE = 16
 
 
 class Evaluation:
 
-    def __init__(self, x_features, y_labels, current_metric="correlation"):
+    def __init__(self, x_features, y_labels, current_metric="euclidean"):
 
         self.x_features = x_features
         self.y_label = y_labels
@@ -115,7 +115,7 @@ class Evaluation:
         axERR.plot(*intersection.xy, 'ro')
         axERR.annotate("(" + str(x) + "," + str(y) + ")", xy=(x, y), xytext=(x + 0.3, y + 0.01))
 
-        axERR.set_title('FAR and FRR', size=LABEL_SIZE)
+        axERR.set_title('FAR and FRR', size=TITLE_SIZE)
         axERR.figure.savefig(config.BASE_PLOT_PATH + "verification_err.png", dpi=400)
         plt.clf()
 
@@ -125,7 +125,7 @@ class Evaluation:
         axROC.plot(fars, list(map(lambda frr: 1 - frr, frrs)))
         axROC.set_ylabel('GAR=1-FRR', fontsize=LABEL_SIZE)
         axROC.set_xlabel('FAR', fontsize=LABEL_SIZE)
-        axROC.set_title('ROC Curve', size=LABEL_SIZE)
+        axROC.set_title('ROC Curve', size=TITLE_SIZE)
         axROC.figure.savefig(config.BASE_PLOT_PATH + "verification_roc.png", dpi=400)
         plt.clf()
 
@@ -137,7 +137,7 @@ class Evaluation:
         axDET.set_xlabel('FAR', fontsize=LABEL_SIZE)
         axDET.set_yscale('log')
         axDET.set_xscale('log')
-        axDET.set_title('DET Curve', size=LABEL_SIZE)
+        axDET.set_title('DET Curve', size=TITLE_SIZE)
         axDET.figure.savefig(config.BASE_PLOT_PATH + "verification_det.png", dpi=400)
         plt.clf()
 
@@ -233,8 +233,6 @@ class Evaluation:
 
     def plot_identification_results(self, results, cms):
 
-        fig, (axERR, axROC, axDET, axDIR, axCMS) = plt.subplots(ncols=5)
-        fig.set_size_inches(25, 5)
         thresholds = []
         fars = []
         frrs = []
@@ -254,7 +252,7 @@ class Evaluation:
         axERR.set_ylabel('Error Rate', fontsize=LABEL_SIZE)
         axERR.set_xlabel('Threshold', fontsize=LABEL_SIZE)
         axERR.legend(loc='lower right', shadow=True, fontsize='x-large')
-        axERR.set_title('FAR and FRR', size=LABEL_SIZE)
+        axERR.set_title('FAR and FRR', size=TITLE_SIZE)
 
         line_1 = LineString(np.column_stack((thresholds, fars)))
         line_2 = LineString(np.column_stack((thresholds, frrs)))
@@ -268,25 +266,12 @@ class Evaluation:
         axERR.figure.savefig(config.BASE_PLOT_PATH + "identification_err.png", dpi=400)
         plt.clf()
 
-        # DET
-        fig, axDET = plt.subplots(nrows=1, ncols=1, figsize=(8.5, 6.5))
-        axDET.plot(fars, frrs)
-        axDET.set_ylabel('FRR', fontsize=LABEL_SIZE)
-        axDET.set_xlabel('FAR', fontsize=LABEL_SIZE)
-
-        axDET.set_yscale('log')
-        axDET.xaxis.set_major_formatter(LogFormatterSciNotation())
-
-        axDET.set_title('DET Curve', size=LABEL_SIZE)
-        axDET.figure.savefig(config.BASE_PLOT_PATH + "identification_det.png", dpi=400)
-        plt.clf()
-
         # ROC
         fig, axROC = plt.subplots(nrows=1, ncols=1, figsize=(8.5, 6.5))
         axROC.plot(fars, list(map(lambda frr: 1 - frr, frrs)))
         axROC.set_ylabel('GAR=1-FRR', fontsize=LABEL_SIZE)
         axROC.set_xlabel('FAR', fontsize=LABEL_SIZE)
-        axROC.set_title('ROC Curve', size=LABEL_SIZE)
+        axROC.set_title('ROC Curve', size=TITLE_SIZE)
         axROC.set_ylim(0, 1)
         axROC.figure.savefig(config.BASE_PLOT_PATH + "identification_roc.png", dpi=400)
         plt.clf()
@@ -296,7 +281,7 @@ class Evaluation:
         axDIR.plot(thresholds, dir1)
         axDIR.set_xlabel('Threshold', fontsize=LABEL_SIZE)
         axDIR.set_ylabel('DIR at rank 1', fontsize=LABEL_SIZE)
-        axDIR.set_title('DIR(t, 1)', size=LABEL_SIZE)
+        axDIR.set_title('DIR(t, 1)', size=TITLE_SIZE)
         axDIR.figure.savefig(config.BASE_PLOT_PATH + "identification_dir.png", dpi=400)
         plt.clf()
 
@@ -305,7 +290,7 @@ class Evaluation:
         axCMS.plot(range(1, len(cms) // 6), cms[1:len(cms) // 6])
         axCMS.set_xlabel('Rank', fontsize=LABEL_SIZE)
         axCMS.set_ylabel('Probability of identification', fontsize=LABEL_SIZE)
-        axCMS.set_title('CMC', size=LABEL_SIZE)
+        axCMS.set_title('CMC', size=TITLE_SIZE)
         axCMS.figure.savefig(config.BASE_PLOT_PATH + "identification_cms.png", dpi=400)
         plt.clf()
 
@@ -315,19 +300,34 @@ class Evaluation:
         axTRS.plot(thresholds, fars, 'r', label='FAR')
         axTRS.plot(thresholds, dir1, label='DIR')
         axTRS.set_xlabel('Threshold', fontsize=LABEL_SIZE)
-        axTRS.set_title('FAR and DIR', size=LABEL_SIZE)
+        axTRS.set_title('FAR and DIR', size=TITLE_SIZE)
+        axTRS.axvline(x=1.31, color="orange", linestyle='--')
         axTRS.legend(loc='lower right', shadow=True, fontsize='x-large')
 
-        # line_1 = LineString(np.column_stack((thresholds, fars)))
-        # line_2 = LineString(np.column_stack((thresholds, dir1)))
-        # intersection = line_1.intersection(line_2)
-        # x, y = intersection.xy
-        # x = float("{:.2f}".format(x[0]))
-        # y = float("{:.2f}".format(y[0]))
+        trsh = np.linspace(0, max(thresholds), 1001)
+        line_1 = LineString(np.column_stack((trsh, fars)))
+        line_2 = LineString(np.column_stack((trsh, dir1)))
+        line_t = LineString([(1.31, 0), (1.31, 1.0)])
 
-        # axTRS.plot(*intersection.xy, 'ro')
-        # axTRS.annotate("(" + str(x) + "," + str(y) + ")", xy=(x, y), xytext=(x + 0.3, y + 0.01))
+        intersection_1 = line_1.intersection(line_t)
+        intersection_2 = line_2.intersection(line_t)
+
+        x1, y1 = intersection_1.xy
+        x1 = float("{:.2f}".format(x1[0]))
+        y1 = float("{:.2f}".format(y1[0]))
+
+        axTRS.plot(*intersection_1.xy, 'g', marker="x")
+
+        axTRS.annotate("(" + str(x1) + "," + str(y1) + ")", xy=(x1, y1), xytext=(x1 + 0.3, y1 - 0.01))
+
+        x2, y2 = intersection_2.xy
+        x2 = float("{:.2f}".format(x2[0]))
+        y2 = float("{:.2f}".format(y2[0]))
+
+        axTRS.plot(*intersection_2.xy, 'g', marker="x")
+        axTRS.annotate("(" + str(x2) + "," + str(y2) + ")", xy=(x2, y2), xytext=(x2 + 0.3, y2 - 0.01))
         axTRS.figure.savefig(config.BASE_PLOT_PATH + "identification_dir_far.png", dpi=400)
+
         plt.clf()
 
     def eval_verification(self):
