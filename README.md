@@ -8,7 +8,8 @@ This project aims to develop a **gait recognition system** using the **Wii Balan
 - Wii Balance Board
 - Python 3.x
 - BrainBLOX software
-
+- Windows XP,7,8,10 and later
+  
 ## Contributions
 
 Contributions to this project are welcome! If you have ideas, suggestions, or would like to report an issue, feel free to open a pull request or an issue.
