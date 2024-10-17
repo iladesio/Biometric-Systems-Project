@@ -2,7 +2,7 @@
 
 # Gait Recognition with Wii Balance Board
 ## Project Overview
-This project aims to develop a **gait recognition system** using the **Wii Balance Board**. The system collects balance and pressure data while a person is walking and uses it to identify individuals based on their unique walking patterns. Gait recognition has a wide range of applications in areas such as security, surveillance, rehabilitation, and healthcare monitoring.
+This project aims to develop a **gait recognition system** using the **Nintendo Wii Balance Board**. The system collects balance and pressure data while a person is walking and uses it to identify individuals based on their unique walking patterns. Gait recognition has a wide range of applications in areas such as security, surveillance, rehabilitation, and healthcare monitoring.
 
 ## System Requirements
 
